@@ -82,12 +82,15 @@ public class InternshipService {
             );
         }
 
-        if (!internship.getStatus().equalsIgnoreCase("ACTIVE")
+        if (!internship.getStatus().equalsIgnoreCase("PENDING")
+                && !internship.getStatus().equalsIgnoreCase("ACCEPTED")
+                && !internship.getStatus().equalsIgnoreCase("REJECTED")
+                && !internship.getStatus().equalsIgnoreCase("ACTIVE")
                 && !internship.getStatus().equalsIgnoreCase("COMPLETED")
                 && !internship.getStatus().equalsIgnoreCase("CANCELLED")) {
 
             throw new IllegalArgumentException(
-                    "Status must be ACTIVE, COMPLETED or CANCELLED"
+                    "Status must be PENDING, ACCEPTED, REJECTED, ACTIVE, COMPLETED or CANCELLED"
             );
         }
     }
