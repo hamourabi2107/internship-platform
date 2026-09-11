@@ -1,0 +1,99 @@
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="brand-mark">IN<span>•</span>TERN</div>
+    <div class="workspace-label">{{ role }} workspace</div>
+    <nav>
+      @for (item of nav; track item.path) {
+        <a [routerLink]="item.path" routerLinkActive="active"><span>{{ item.icon }}</span>{{ item.label }}</a>
+      }
+    </nav>
+    <div class="sidebar-foot">
+      <div class="support-card"><small>Need a hand?</small><b>Program support</b><span>→</span></div>
+      <button class="logout" (click)="logout()">↪ <span>Sign out</span></button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="crumb"><span>Workspace</span><b>/</b><strong>{{ title }}</strong></div>
+      <div class="top-actions">
+        <button class="icon-button" aria-label="Search" (click)="announceUnavailable('Global search')">⌕</button>
+        <button class="icon-button" aria-label="Notifications" (click)="announceUnavailable('Notifications')">♧</button>
+        <div class="user-chip"><span class="avatar">{{ role[0] }}</span><span><b>{{ role === 'ADMIN' ? 'Program admin' : role === 'COMPANY' ? 'Host company' : 'Alex Morgan' }}</b><small>{{ role | titlecase }}</small></span><i>⌄</i></div>
+      </div>
+    </header>
+
+    <section class="content">
+      <app-page-header [eyebrow]="(role === 'ADMIN' ? 'Back office' : 'Front office') + ' / ' + title" [title]="title" [subtitle]="role === 'STUDENT' ? 'Keep your placement moving, one milestone at a time.' : role === 'COMPANY' ? 'A clear view of your talent pipeline and active placements.' : 'A live operational view of the internship programme.'">
+        @if (isDataPage()) {
+          <button class="primary-button" (click)="openNew()">＋ <span>Add {{ currentPath.includes('students') ? 'student' : currentPath.includes('companies') ? 'company' : currentPath.includes('supervisors') ? 'supervisor' : currentPath.includes('evaluations') ? 'evaluation' : isRequestPage() ? 'request' : currentPath.includes('tasks') ? 'task' : 'internship' }}</span></button>
+        }
+      </app-page-header>
+
+      @if (notice) { <div class="alert success">✓ {{ notice }}</div> }
+      @if (error) { <div class="alert error">! {{ error }}</div> }
+
+      @if (currentPath.endsWith('dashboard')) {
+        @if (dashboardLoading) { <app-loading-indicator /> }
+        @else {
+          <div class="metric-grid">
+            <article><span class="metric-icon green">◎</span><small>{{ dashboardStats.first.label }}</small><strong>{{ dashboardStats.first.value }}</strong><em>{{ dashboardStats.first.note }}</em></article>
+            <article><span class="metric-icon orange">▣</span><small>{{ dashboardStats.second.label }}</small><strong>{{ dashboardStats.second.value }}</strong><em>{{ dashboardStats.second.note }}</em></article>
+            <article><span class="metric-icon lime">◫</span><small>{{ dashboardStats.third.label }}</small><strong>{{ dashboardStats.third.value }}</strong><em>{{ dashboardStats.third.note }}</em></article>
+            <article><span class="metric-icon coral">✦</span><small>{{ dashboardStats.fourth.label }}</small><strong>{{ dashboardStats.fourth.value }}</strong><em>{{ dashboardStats.fourth.note }}</em></article>
+          </div>
+        }
+
+        <div class="dashboard-grid">
+          <section class="panel wide"><div class="panel-head"><div><span class="eyebrow">Live pipeline</span><h2>{{ role === 'STUDENT' ? 'My placement activity' : role === 'COMPANY' ? 'Recent requests' : 'Recent internships' }}</h2></div><a [routerLink]="role === 'ADMIN' ? '/admin/internships' : role === 'COMPANY' ? '/company/internships' : '/student/internships'">View all →</a></div>
+            <div class="activity-list">
+              @for (item of items.slice(0, 4); track item.id) {
+                <div class="activity-row"><span class="status-dot"></span><div><b>{{ item.title || item.name || 'Internship placement' }}</b><small>{{ item.company || item.email || 'Awaiting programme details' }}</small></div><app-status-badge [label]="item.status || 'ACTIVE'" /></div>
+              } @empty { <app-empty-state title="No live records yet" message="Connect the backend services to see recent programme activity here." /> }
+            </div>
+          </section>
+          <section class="panel next-panel"><span class="eyebrow">Next up</span><h2>Programme rhythm</h2><div class="timeline"><span></span><div><b>{{ role === 'STUDENT' ? 'Submit your documents' : 'Placement review' }}</b><small>Keep milestones and evaluations current.</small></div></div><div class="timeline"><span></span><div><b>Documentation check</b><small>Document tracking is not available in the current backend.</small></div></div><button class="ghost-button" (click)="announceUnavailable('Calendar')">Open calendar →</button></section>
+        </div>
+      } @else if (isDataPage()) {
+        <section class="panel table-panel">
+          <div class="table-toolbar"><div class="search"><span>⌕</span><input [(ngModel)]="search" placeholder="Search records..."></div><span class="record-count">{{ filtered().length }} records</span></div>
+          @if (loading) { <app-loading-indicator /> }
+          @else if (filtered().length) {
+            <div class="table-wrap"><table><thead><tr><th>Record</th><th>Details</th><th>Status</th><th class="align-right">Actions</th></tr></thead><tbody>
+              @for (item of filtered(); track item.id) {
+                <tr><td><div class="record"><span class="record-avatar">{{ (item.name || item.title || item.taskDescription || 'R')[0] }}</span><div><b>{{ item.name || item.title || item.taskDescription || 'Record #' + item.id }}</b><small>#{{ item.id || 'new' }} · {{ item.email || item.company || 'Programme record' }}</small></div></div></td><td>{{ item.address || item.description || item.company || item.reason || item.remarks || '—' }}</td><td><app-status-badge [label]="item.status || 'ACTIVE'" /></td><td class="align-right">
+                  @if (isRequestPage() && item.status === 'PENDING') { <button class="table-action approve" (click)="updateAcceptance(item, 'ACCEPTED')">Accept</button><button class="table-action reject" (click)="updateAcceptance(item, 'REJECTED')">Refuse</button> }
+                  @if (currentPath.includes('tasks') && item.status === 'PENDING') { <button class="table-action approve" (click)="updateTask(item, 'APPROVED')">Approve</button><button class="table-action reject" (click)="updateTask(item, 'REJECTED')">Refuse</button> }
+                  <button class="table-action main-action" (click)="view(item)">View</button>
+                  @if (currentPath.includes('students') || currentPath.includes('companies') || currentPath.includes('supervisors') || (currentPath.includes('internships') && !isRequestPage()) || currentPath.includes('evaluations') || currentPath.includes('requests') || currentPath.includes('tasks')) { <button class="table-action" (click)="edit(item)">Edit</button><button class="table-action reject" (click)="remove(item)">Delete</button> }
+                </td></tr>
+              }
+            </tbody></table></div>
+          } @else { <app-empty-state title="No records found" message="Try a different search or create the first record." /> }
+        </section>
+      } @else {
+        <section class="panel empty-page"><app-empty-state icon="✦" [title]="title + ' is ready'" [message]="'The backend does not expose a ' + title.toLowerCase() + ' endpoint yet. This interface is ready to connect when the capability is available.'" /></section>
+      }
+    </section>
+  </main>
+</div>
+
+@if (showForm) {
+  <div class="modal-backdrop" (click)="showForm = false"><section class="modal" (click)="$event.stopPropagation()"><button class="modal-close" (click)="showForm = false">×</button><span class="eyebrow">{{ editing ? 'Edit record' : 'New record' }}</span><h2>{{ editing ? 'Edit' : 'Create' }} {{ formTitle }}</h2>
+    <form [formGroup]="form" (ngSubmit)="save()">
+      @if (currentPath.includes('students')) { <div class="form-grid"><label>First name<input formControlName="firstName"></label><label>Last name<input formControlName="lastName"></label></div><label>Email<input type="email" formControlName="email"></label><label>Phone <small>8 digits</small><input formControlName="phone"></label> }
+      @else if (currentPath.includes('companies')) { <label>Company name<input formControlName="name"></label><label>Email<input type="email" formControlName="email"></label><div class="form-grid"><label>Phone<input formControlName="phone"></label><label>Address<input formControlName="address"></label></div> }
+      @else if (currentPath.includes('supervisors')) { <div class="form-grid"><label>First name<input formControlName="firstName"></label><label>Last name<input formControlName="lastName"></label></div><label>Email<input type="email" formControlName="email"></label><div class="form-grid"><label>Phone<input formControlName="phone"></label><label>Company ID<input type="number" formControlName="companyId"></label></div> }
+      @else if (currentPath.includes('evaluations')) { <div class="form-grid"><label>Internship ID<input type="number" formControlName="internshipId"></label><label>Supervisor ID<input type="number" formControlName="supervisorId"></label></div><div class="form-grid"><label>Quality / 20<input type="number" min="0" max="20" formControlName="quality"></label><label>Punctuality / 20<input type="number" min="0" max="20" formControlName="punctuality"></label></div><label>Communication / 20<input type="number" min="0" max="20" formControlName="communication"></label><label>Remarks<textarea formControlName="remarks" rows="3"></textarea></label> }
+      @else if (isRequestPage()) { <div class="form-grid"><label>Internship ID<input type="number" formControlName="internshipId"></label><label>Company ID<input type="number" formControlName="companyId"></label></div><label>Status<select formControlName="status"><option value="PENDING">Pending</option><option value="ACCEPTED">Accepted</option><option value="REJECTED">Rejected</option></select></label><label>Reason<textarea formControlName="reason" rows="3"></textarea></label> }
+      @else if (currentPath.includes('tasks')) { <div class="form-grid"><label>Internship ID<input type="number" formControlName="internshipId"></label><label>Supervisor ID<input type="number" formControlName="supervisorId"></label></div><label>Task description<textarea formControlName="taskDescription" rows="3"></textarea></label><label>Status<select formControlName="status"><option value="PENDING">Pending</option><option value="APPROVED">Approved</option><option value="REJECTED">Rejected</option></select></label><label>Comment<textarea formControlName="comment" rows="3"></textarea></label> }
+      @else { <label>Internship title<input formControlName="title"></label><label>Company<input formControlName="company"></label><label>Description<textarea formControlName="description" rows="3"></textarea></label><div class="form-grid"><label>Start date<input type="date" formControlName="startDate"></label><label>End date<input type="date" formControlName="endDate"></label></div> }
+      @if (form.invalid && form.touched) { <div class="alert error">Please complete the required fields and correct invalid values before saving.</div> }
+      <button class="primary-button full" type="submit">{{ editing ? 'Update' : 'Save' }} record <span>↗</span></button>
+    </form>
+  </section></div>
+}
+
+@if (detailOpen && selectedRecord) {
+  <div class="modal-backdrop" (click)="detailOpen = false"><section class="modal detail-modal" (click)="$event.stopPropagation()"><button class="modal-close" (click)="detailOpen = false">×</button><span class="eyebrow">Record detail</span><h2>{{ selectedRecord.name || selectedRecord.title || selectedRecord.taskDescription || 'Record #' + selectedRecord.id }}</h2><div class="detail-list">@for (entry of selectedRecord | keyvalue; track entry.key) {<div><small>{{ entry.key }}</small><b>{{ entry.value || '—' }}</b></div>}</div></section></div>
+}
