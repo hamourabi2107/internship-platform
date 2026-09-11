@@ -35,7 +35,7 @@ pipeline {
                 dir('frontend') {
                     script {
                         if (isUnix()) {
-                            sh 'npm ci && npm run build'
+                            sh 'docker run --rm -v "$WORKSPACE/frontend:/app" -w /app node:22-bookworm sh -c "npm ci && npm run build"'
                         } else {
                             bat 'call npm ci && call npm run build'
                         }
