@@ -1,0 +1,133 @@
+services:
+
+  eureka-server:
+    build:
+      context: ./eureka-server
+    container_name: eureka-server
+    ports:
+      - "8761:8761"
+    networks:
+      - internship-network
+
+  student-db:
+    image: mysql:8.0
+    container_name: student-db
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: student_db
+    ports:
+      - "3307:3306"
+    volumes:
+      - student-db-data:/var/lib/mysql
+    networks:
+      - internship-network
+
+  internship-db:
+    image: mysql:8.0
+    container_name: internship-db
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: internship_db
+    ports:
+      - "3308:3306"
+    volumes:
+      - internship-db-data:/var/lib/mysql
+    networks:
+      - internship-network
+
+  company-db:
+    image: mariadb:10.11
+    container_name: company-db
+    environment:
+      MARIADB_ROOT_PASSWORD: root
+      MARIADB_DATABASE: company_db
+    ports:
+      - "3309:3306"
+    volumes:
+      - company-db-data:/var/lib/mysql
+    networks:
+      - internship-network
+
+  student-service:
+    build:
+      context: ./student-service
+    container_name: student-service
+    ports:
+      - "8084:8084"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://student-db:3306/student_db
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      EUREKA_INSTANCE_HOSTNAME: student-service
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "false"
+    depends_on:
+      - eureka-server
+      - student-db
+    networks:
+      - internship-network
+
+  internship-service:
+    build:
+      context: ./internship-service
+    container_name: internship-service
+    ports:
+      - "8085:8085"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://internship-db:3306/internship_db
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      EUREKA_INSTANCE_HOSTNAME: internship-service
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "false"
+    depends_on:
+      - eureka-server
+      - internship-db
+    networks:
+      - internship-network
+
+  company-service:
+    build:
+      context: ./company-service
+    container_name: company-service
+    ports:
+      - "8086:8086"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mariadb://company-db:3306/company_db
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      EUREKA_INSTANCE_HOSTNAME: company-service
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "false"
+    depends_on:
+      - eureka-server
+      - company-db
+    networks:
+      - internship-network
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+    container_name: api-gateway
+    ports:
+      - "8083:8083"
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      EUREKA_INSTANCE_HOSTNAME: api-gateway
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "false"
+    depends_on:
+      - eureka-server
+      - student-service
+      - internship-service
+      - company-service
+    networks:
+      - internship-network
+
+networks:
+  internship-network:
+    driver: bridge
+
+volumes:
+  student-db-data:
+  internship-db-data:
+  company-db-data:
