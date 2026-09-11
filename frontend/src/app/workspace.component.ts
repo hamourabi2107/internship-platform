@@ -1,8 +1,8 @@
 import { Component, inject } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormsModule, FormBuilder, Validators } from '@angular/forms';
-import { Observable, catchError, forkJoin, of } from 'rxjs';
+import { AbstractControl, ReactiveFormsModule, FormsModule, FormBuilder, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
+import { Observable, catchError, forkJoin, of, timeout } from 'rxjs';
 import { AuthService } from './core/services/auth.service';
 import { ApiService } from './core/services/api.services';
 import { Acceptance, Company, Evaluation, Internship, Student, Supervisor, TaskApproval } from './core/models/entities';
@@ -10,6 +10,12 @@ import { StatusBadgeComponent } from './shared/components/status-badge.component
 import { EmptyStateComponent } from './shared/components/empty-state.component';
 import { LoadingIndicatorComponent } from './shared/components/loading-indicator.component';
 import { PageHeaderComponent } from './shared/components/page-header.component';
+
+const internshipDateValidator: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
+  const startDate = control.get('startDate')?.value;
+  const endDate = control.get('endDate')?.value;
+  return startDate && endDate && startDate > endDate ? { dateOrder: true } : null;
+};
 
 @Component({ selector:'app-workspace', standalone:true, imports:[CommonModule,RouterLink,RouterLinkActive,ReactiveFormsModule,FormsModule,StatusBadgeComponent,EmptyStateComponent,LoadingIndicatorComponent,PageHeaderComponent], templateUrl:'./workspace.component.html', styleUrl:'./workspace.component.scss' })
 export class WorkspaceComponent {
@@ -22,7 +28,7 @@ export class WorkspaceComponent {
     fourth: { label: '', value: '0', note: 'No records available' }
   };
   studentForm=this.fb.group({firstName:['',Validators.required],lastName:['',Validators.required],email:['',[Validators.required,Validators.email]],phone:['',[Validators.required,Validators.pattern(/^\d{8}$/)]]});
-  internshipForm=this.fb.group({title:['',Validators.required],company:['',Validators.required],description:['',[Validators.required,Validators.minLength(20)]],startDate:['',Validators.required],endDate:['',Validators.required],studentId:[1,Validators.required],status:['ACTIVE',Validators.required]});
+  internshipForm=this.fb.group({title:['',Validators.required],company:['',Validators.required],description:['',Validators.required],startDate:['',Validators.required],endDate:['',Validators.required],studentId:[1,[Validators.required,Validators.min(1)]],status:['ACTIVE',Validators.required]}, { validators: internshipDateValidator });
   companyForm=this.fb.group({name:['',Validators.required],email:['',[Validators.required,Validators.email]],phone:['',[Validators.required,Validators.pattern(/^\d{8}$/)]],address:['',Validators.required]});
   supervisorForm=this.fb.group({firstName:['',Validators.required],lastName:['',Validators.required],email:['',[Validators.required,Validators.email]],phone:['',[Validators.required,Validators.pattern(/^\d{8}$/)]],companyId:[1,Validators.required]});
   evaluationForm=this.fb.group({internshipId:[1,Validators.required],supervisorId:[1,Validators.required],quality:[10,[Validators.required,Validators.min(0),Validators.max(20)]],punctuality:[10,[Validators.required,Validators.min(0),Validators.max(20)]],communication:[10,[Validators.required,Validators.min(0),Validators.max(20)]],appreciation:[''],remarks:['']});
@@ -33,7 +39,7 @@ export class WorkspaceComponent {
   get title(){const labels:Record<string,string>={dashboard:'Overview',students:'Students',companies:'Companies',supervisors:'Supervisors',internships:'Internships',requests:'Internship requests',documents:'Documents',evaluations:'Evaluations',complaints:'Complaints',reports:'Reports',grades:'Grades',tasks:'Task approvals',journal:'Journal',report:'Internship report','assignment-letter':'Assignment letter',evaluation:'My evaluation',complaint:'Complaints',company:'Company profile'};return labels[this.currentPath.split('/').pop()||'dashboard']||'Overview';}
   get nav(){if(this.role==='ADMIN')return [{label:'Overview',path:'/admin/dashboard',icon:'⌂'},{label:'Students',path:'/admin/students',icon:'◎'},{label:'Companies',path:'/admin/companies',icon:'▣'},{label:'Supervisors',path:'/admin/supervisors',icon:'◉'},{label:'Internships',path:'/admin/internships',icon:'◫'},{label:'Requests',path:'/admin/requests',icon:'↗'},{label:'Documents',path:'/admin/documents',icon:'▤'},{label:'Evaluations',path:'/admin/evaluations',icon:'✦'},{label:'Complaints',path:'/admin/complaints',icon:'!'},{label:'Reports & grades',path:'/admin/reports',icon:'▥'}];if(this.role==='COMPANY')return [{label:'Overview',path:'/company/dashboard',icon:'⌂'},{label:'Internship requests',path:'/company/internships',icon:'↗'},{label:'Supervisors',path:'/company/supervisors',icon:'◉'},{label:'Task approvals',path:'/company/tasks',icon:'✓'},{label:'Evaluations',path:'/company/evaluations',icon:'✦'}];return [{label:'Overview',path:'/student/dashboard',icon:'⌂'},{label:'My internships',path:'/student/internships',icon:'◫'},{label:'Company',path:'/student/company',icon:'▣'},{label:'Supervisor',path:'/student/supervisor',icon:'◉'},{label:'Tasks',path:'/student/tasks',icon:'✓'},{label:'Documents',path:'/student/documents',icon:'▤'},{label:'Journal',path:'/student/journal',icon:'✎'},{label:'Evaluation',path:'/student/evaluation',icon:'✦'}];}
   load(){this.loading=true;this.error='';const p=this.currentPath;if(p.endsWith('dashboard')){this.loadDashboard();return;}if(p.includes('students'))this.api.students.list().subscribe({next:x=>this.done(x),error:e=>this.fail(e)});else if(p.includes('companies'))this.api.companies.list().subscribe({next:x=>this.done(x),error:e=>this.fail(e)});else if(p.includes('supervisors'))this.api.supervisors.list().subscribe({next:x=>this.done(x),error:e=>this.fail(e)});else if(this.isRequestPage())this.api.acceptances.list().subscribe({next:x=>this.done(x),error:e=>this.fail(e)});else if(p.includes('internships'))this.api.internships.list().subscribe({next:x=>this.done(x),error:e=>this.fail(e)});else if(p.includes('evaluations'))this.api.evaluations.list().subscribe({next:x=>this.done(x),error:e=>this.fail(e)});else if(p.includes('tasks'))this.api.tasks.list().subscribe({next:x=>this.done(x),error:e=>this.fail(e)});else if(p.includes('requests'))this.api.acceptances.list().subscribe({next:x=>this.done(x),error:e=>this.fail(e)});else {this.items=[];this.loading=false;}}
-  private safeList<T>(request: Observable<T[]>){return request.pipe(catchError(() => of([] as T[])));}
+  private safeList<T>(request: Observable<T[]>) { return request.pipe(timeout({ first: 5000 }), catchError(() => of([] as T[]))); }
   private loadDashboard(){
     this.dashboardLoading=true;this.dashboardError='';
     if(this.role==='STUDENT'){
@@ -56,7 +62,7 @@ export class WorkspaceComponent {
       this.items=internships;this.dashboardLoading=false;this.loading=false;
     });
   }
-  done(items:any[]){this.items=items||[];this.loading=false;} fail(e:any){this.loading=false;this.error=e?.status===0?'Gateway unavailable. Start the backend services to load live data.':`Could not load ${this.title.toLowerCase()}. Please try again.`;}
+  done(items:any[]){this.items=items||[];this.loading=false;} fail(e:any){this.loading=false;this.error=e?.name==='TimeoutError'?'The gateway took too long to respond. Please check that the backend is running.':e?.status===0?'Gateway unavailable. Start the backend services to load live data.':`Could not load ${this.title.toLowerCase()}. Please try again.`;}
   logout(){this.auth.logout();this.router.navigateByUrl('/login');}
   announceUnavailable(feature: string){this.notice=`${feature} is not available in the current backend.`;setTimeout(()=>this.notice='',3500);}
   get formTitle(){return this.isRequestPage()?'request':this.currentPath.includes('tasks')?'task':this.currentPath.includes('students')?'student':this.currentPath.includes('companies')?'company':this.currentPath.includes('supervisors')?'supervisor':this.currentPath.includes('evaluations')?'evaluation':'internship';}
