@@ -1,5 +1,6 @@
 package tn.esprit.studentservice.controller;
 
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import tn.esprit.studentservice.entity.Student;
@@ -31,14 +32,16 @@ public class StudentController {
     }
 
     @PostMapping
-    public ResponseEntity<Student> createStudent(@RequestBody Student student) {
+    public ResponseEntity<Student> createStudent(
+            @Valid @RequestBody Student student) {
+
         return ResponseEntity.ok(studentService.createStudent(student));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<Student> updateStudent(
             @PathVariable Long id,
-            @RequestBody Student studentDetails) {
+            @Valid @RequestBody Student studentDetails) {
 
         return studentService.updateStudent(id, studentDetails)
                 .map(ResponseEntity::ok)

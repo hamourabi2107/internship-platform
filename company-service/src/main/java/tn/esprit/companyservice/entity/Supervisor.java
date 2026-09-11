@@ -1,13 +1,18 @@
-package tn.esprit.studentservice.entity;
+package tn.esprit.companyservice.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 
 @Entity
-@Table(name = "student")
-public class Student {
+@Table(name = "supervisors")
+public class Supervisor {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -21,21 +26,28 @@ public class Student {
 
     @NotBlank
     @Email
-    @Column(nullable = false, unique = true)
     private String email;
 
     @NotBlank
-    @Pattern(regexp = "\\d{8}", message = "Le numéro de téléphone doit contenir exactement 8 chiffres")
+    @Pattern(regexp = "\\d{8}", message = "Phone must contain exactly 8 digits")
     private String phone;
 
-    public Student() {
+    @NotNull
+    private Long companyId;
+
+    public Supervisor() {
     }
 
-    public Student(String firstName, String lastName, String email, String phone) {
+    public Supervisor(String firstName,
+                      String lastName,
+                      String email,
+                      String phone,
+                      Long companyId) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
         this.phone = phone;
+        this.companyId = companyId;
     }
 
     public Long getId() {
@@ -76,5 +88,13 @@ public class Student {
 
     public void setPhone(String phone) {
         this.phone = phone;
+    }
+
+    public Long getCompanyId() {
+        return companyId;
+    }
+
+    public void setCompanyId(Long companyId) {
+        this.companyId = companyId;
     }
 }
