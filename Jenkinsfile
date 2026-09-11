@@ -48,7 +48,7 @@ pipeline {
             steps {
                 script {
                     if (isUnix()) {
-                        sh 'docker compose build'
+                        sh 'docker compose --parallel 1 build'
                     } else {
                         bat 'docker compose build'
                     }
