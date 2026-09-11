@@ -20,7 +20,7 @@ pipeline {
                     for (service in services) {
                         dir(service) {
                             if (isUnix()) {
-                                sh './mvnw -B -DskipTests clean package'
+                                sh 'mvn -B -DskipTests clean package'
                             } else {
                                 bat 'call mvnw.cmd -B -DskipTests clean package'
                             }
