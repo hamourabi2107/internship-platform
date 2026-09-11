@@ -1,4 +1,0 @@
-The following files have been resolved:
-   org.springframework.cloud:spring-cloud-starter-gateway-server-webflux:jar:5.0.3:compile -- module spring.cloud.starter.gateway.server.webflux (auto)
-   org.springframework.cloud:spring-cloud-starter-netflix-eureka-client:jar:5.0.2:compile -- module spring.cloud.starter.netflix.eureka.client (auto)
-
