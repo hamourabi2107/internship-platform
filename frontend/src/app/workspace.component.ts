@@ -70,5 +70,6 @@ export class WorkspaceComponent {
   remove(item:any){if(!item.id||!confirm('Delete this record?'))return;const action=this.currentPath.includes('students')?this.api.students.remove(item.id):this.currentPath.includes('companies')?this.api.companies.remove(item.id):this.currentPath.includes('supervisors')?this.api.supervisors.remove(item.id):this.currentPath.includes('evaluations')?this.api.evaluations.remove(item.id):this.isRequestPage()?this.api.acceptances.remove(item.id):this.currentPath.includes('tasks')?this.api.tasks.remove(item.id):this.api.internships.remove(item.id);action.subscribe({next:()=>{this.notice='Record deleted';this.load()},error:e=>this.fail(e)});}
   filtered(){const q=this.search.toLowerCase();return this.items.filter(x=>!q||JSON.stringify(x).toLowerCase().includes(q));}
   isRequestPage(){return this.currentPath.includes('requests')||(this.role==='COMPANY'&&this.currentPath.includes('internships'));}
+  canManageTasks(){return this.role==='COMPANY' && this.currentPath.includes('tasks');}
   isDataPage(){return ['students','companies','supervisors','internships','requests','evaluations','tasks'].some(x=>this.currentPath.includes(x));}
 }
