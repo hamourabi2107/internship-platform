@@ -25,7 +25,7 @@
 
     <section class="content">
       <app-page-header [eyebrow]="(role === 'ADMIN' ? 'Back office' : 'Front office') + ' / ' + title" [title]="title" [subtitle]="role === 'STUDENT' ? 'Keep your placement moving, one milestone at a time.' : role === 'COMPANY' ? 'A clear view of your talent pipeline and active placements.' : 'A live operational view of the internship programme.'">
-        @if (isDataPage() && (!currentPath.includes('tasks') || canManageTasks())) {
+        @if (isDataPage()) {
           <button class="primary-button" (click)="openNew()">＋ <span>Add {{ currentPath.includes('students') ? 'student' : currentPath.includes('companies') ? 'company' : currentPath.includes('supervisors') ? 'supervisor' : currentPath.includes('evaluations') ? 'evaluation' : isRequestPage() ? 'request' : currentPath.includes('tasks') ? 'task' : 'internship' }}</span></button>
         }
       </app-page-header>
@@ -71,6 +71,8 @@
             </tbody></table></div>
           } @else { <app-empty-state title="No records found" message="Try a different search or create the first record." /> }
         </section>
+      } @else if (isUiWorkflowPage()) {
+        <section class="panel ui-workflow-panel"><div class="panel-head"><div><span class="eyebrow">Demo workflow / UI-only</span><h2>{{ uiWorkflowLabel() }}</h2></div><span class="badge pending">Not backed by current API</span></div><div class="ui-workflow-body"><p class="workflow-note">The current backend has no {{ uiWorkflowLabel().toLowerCase() }} endpoint. This demo state is stored locally in this browser and is not written to Docker databases.</p><textarea [(ngModel)]="uiText" rows="4" placeholder="Enter activity, submission details, or complaint..." ></textarea><button class="primary-button" (click)="submitUiEntry()">Submit {{ uiWorkflowLabel().toLowerCase() }} <span>↗</span></button><div class="ui-entry-list">@for (entry of uiEntries; track entry.createdAt + entry.text) {<div class="ui-entry"><div><b>{{ entry.text }}</b><small>{{ entry.createdAt }}</small></div>@if (role === 'ADMIN') {<button class="table-action" (click)="updateUiEntryStatus(entry)">{{ entry.status === 'Processed' ? 'Processed' : 'Mark processed' }}</button>} @else {<span class="badge accepted">{{ entry.status }}</span>}</div>} @empty {<app-empty-state title="No demo submissions yet" message="Submit the first item to demonstrate this UI-only workflow." />}</div></div></section>
       } @else {
         <section class="panel empty-page"><app-empty-state icon="✦" [title]="title + ' is ready'" [message]="'The backend does not expose a ' + title.toLowerCase() + ' endpoint yet. This interface is ready to connect when the capability is available.'" /></section>
       }
