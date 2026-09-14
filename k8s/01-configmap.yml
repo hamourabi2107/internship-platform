@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: platform-config
+data:
+  EUREKA_URL: "http://eureka-server:8761/eureka/"
+  STUDENT_DB_URL: "jdbc:mysql://student-db:3306/student_db"
+  INTERNSHIP_DB_URL: "jdbc:mysql://internship-db:3306/internship_db"
+  COMPANY_DB_URL: "jdbc:mariadb://company-db:3306/company_db"

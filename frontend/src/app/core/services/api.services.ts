@@ -1,10 +1,14 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Acceptance, Company, Evaluation, Internship, Student, Supervisor, TaskApproval } from '../models/entities';
+import { environment } from '../../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
-  private readonly base = 'http://localhost:8083';
+  private get base(): string {
+    const runtimeUrl = typeof window !== 'undefined' ? ((window as any).__env?.apiUrl || localStorage.getItem('internship-api-url')) : null;
+    return (runtimeUrl || environment.apiUrl || 'http://localhost:8083').replace(/\/+$/, '');
+  }
   constructor(private http: HttpClient) {}
   students = { list: () => this.http.get<Student[]>(`${this.base}/student`), get: (id: number) => this.http.get<Student>(`${this.base}/student/${id}`), save: (item: Student) => item.id ? this.http.put<Student>(`${this.base}/student/${item.id}`, item) : this.http.post<Student>(`${this.base}/student`, item), remove: (id: number) => this.http.delete(`${this.base}/student/${id}`) };
   companies = { list: () => this.http.get<Company[]>(`${this.base}/companies`), get: (id: number) => this.http.get<Company>(`${this.base}/companies/${id}`), save: (item: Company) => item.id ? this.http.put<Company>(`${this.base}/companies/${item.id}`, item) : this.http.post<Company>(`${this.base}/companies`, item), remove: (id: number) => this.http.delete(`${this.base}/companies/${id}`) };
