@@ -112,13 +112,19 @@ pipeline {
                 script {
                     echo "Starting platform services with Docker Compose..."
                     if (isUnix()) {
-                        sh 'docker compose down'
-                        sh 'docker compose up -d'
-                        sh 'sleep 15'
+                        sh '''
+                            docker compose down --remove-orphans || true
+                            docker rm -f eureka-server api-gateway student-service internship-service company-service student-db internship-db company-db prometheus grafana 2>/dev/null || true
+                            docker compose up -d
+                            sleep 15
+                        '''
                     } else {
-                        bat 'docker compose down'
-                        bat 'docker compose up -d'
-                        bat 'timeout /t 15 /nobreak'
+                        bat '''
+                            docker compose down --remove-orphans
+                            docker rm -f eureka-server api-gateway student-service internship-service company-service student-db internship-db company-db prometheus grafana 2>nul || ver >nul
+                            docker compose up -d
+                            timeout /t 15 /nobreak
+                        '''
                     }
                 }
             }
