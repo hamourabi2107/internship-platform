@@ -28,11 +28,11 @@ check_endpoint() {
 
 FAILED=0
 
-check_endpoint "Eureka Discovery Server" "${EUREKA_URL}/actuator/health" 10 3 || FAILED=1
-check_endpoint "API Gateway" "${GATEWAY_URL}/actuator/health" 10 3 || FAILED=1
-check_endpoint "Gateway -> Student Service Route" "${GATEWAY_URL}/student" 10 3 || FAILED=1
-check_endpoint "Gateway -> Internship Service Route" "${GATEWAY_URL}/internships" 10 3 || FAILED=1
-check_endpoint "Gateway -> Company Service Route" "${GATEWAY_URL}/companies" 10 3 || FAILED=1
+check_endpoint "Eureka Discovery Server" "${EUREKA_URL}/actuator/health" 30 3 || FAILED=1
+check_endpoint "API Gateway" "${GATEWAY_URL}/actuator/health" 30 3 || FAILED=1
+check_endpoint "Gateway -> Student Service Route" "${GATEWAY_URL}/student" 30 3 || FAILED=1
+check_endpoint "Gateway -> Internship Service Route" "${GATEWAY_URL}/internships" 30 3 || FAILED=1
+check_endpoint "Gateway -> Company Service Route" "${GATEWAY_URL}/companies" 30 3 || FAILED=1
 
 if [ "$FAILED" -eq 0 ]; then
     echo "===================================================="

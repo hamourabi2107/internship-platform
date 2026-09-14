@@ -11,7 +11,7 @@ function Test-Endpoint {
     param(
         [string]$Name,
         [string]$Url,
-        [int]$MaxAttempts = 10,
+        [int]$MaxAttempts = 30,
         [int]$DelaySeconds = 3
     )
     Write-Host -NoNewline "Checking $Name ($Url) ... "

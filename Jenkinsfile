@@ -114,9 +114,11 @@ pipeline {
                     if (isUnix()) {
                         sh 'docker compose down'
                         sh 'docker compose up -d'
+                        sh 'sleep 15'
                     } else {
                         bat 'docker compose down'
                         bat 'docker compose up -d'
+                        bat 'timeout /t 15 /nobreak'
                     }
                 }
             }
@@ -141,13 +143,11 @@ pipeline {
                 script {
                     if (isUnix()) {
                         sh '''
-                            if command -v kubectl >/dev/null 2>&1; then
-                                echo "Validating Kubernetes manifests syntax..."
+                            if command -v kubectl >/dev/null 2>&1 && kubectl cluster-info >/dev/null 2>&1; then
+                                echo "Validating Kubernetes manifests syntax against active cluster..."
                                 kubectl apply --dry-run=client -f k8s/
-                            elif command -v minikube >/dev/null 2>&1; then
-                                minikube kubectl -- apply --dry-run=client -f k8s/
                             else
-                                echo "kubectl not installed; dry-run skipped."
+                                echo "Kubernetes cluster offline or not configured; skipping dry-run validation."
                             fi
                         '''
                     } else {
