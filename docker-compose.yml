@@ -8,6 +8,8 @@ services:
     container_name: eureka-server
     ports:
       - "8761:8761"
+    environment:
+      JAVA_TOOL_OPTIONS: "-Xmx256m -Xms128m"
     networks:
       - internship-network
 
@@ -75,6 +77,7 @@ services:
     ports:
       - "8084:8084"
     environment:
+      JAVA_TOOL_OPTIONS: "-Xmx256m -Xms128m"
       SPRING_DATASOURCE_URL: jdbc:mysql://student-db:3306/student_db
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root
@@ -96,6 +99,7 @@ services:
     ports:
       - "8085:8085"
     environment:
+      JAVA_TOOL_OPTIONS: "-Xmx256m -Xms128m"
       SPRING_DATASOURCE_URL: jdbc:mysql://internship-db:3306/internship_db
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root
@@ -117,6 +121,7 @@ services:
     ports:
       - "8086:8086"
     environment:
+      JAVA_TOOL_OPTIONS: "-Xmx256m -Xms128m"
       SPRING_DATASOURCE_URL: jdbc:mariadb://company-db:3306/company_db
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root
@@ -138,6 +143,7 @@ services:
     ports:
       - "8083:8083"
     environment:
+      JAVA_TOOL_OPTIONS: "-Xmx256m -Xms128m"
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       EUREKA_INSTANCE_HOSTNAME: api-gateway
       EUREKA_INSTANCE_PREFER_IP_ADDRESS: "false"
