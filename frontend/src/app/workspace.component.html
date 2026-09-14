@@ -1,32 +1,32 @@
 <div class="app-shell">
   <aside class="sidebar">
     <div class="brand-mark">IN<span>•</span>TERN</div>
-    <div class="workspace-label">{{ role }} workspace</div>
+    <div class="workspace-label">{{ currentAccount.label }}</div>
     <nav>
       @for (item of nav; track item.path) {
         <a [routerLink]="item.path" routerLinkActive="active"><span>{{ item.icon }}</span>{{ item.label }}</a>
       }
     </nav>
     <div class="sidebar-foot">
-      <div class="support-card"><small>Need a hand?</small><b>Program support</b><span>→</span></div>
-      <button class="logout" (click)="logout()">↪ <span>Sign out</span></button>
+      <div class="support-card"><small>Support Académique</small><b>ESPRIT Placement Office</b><span>→</span></div>
+      <button class="logout" (click)="logout()">↪ <span>Déconnexion</span></button>
     </div>
   </aside>
 
   <main class="main">
     <header class="topbar">
-      <div class="crumb"><span>Workspace</span><b>/</b><strong>{{ title }}</strong></div>
+      <div class="crumb"><span>{{ currentAccount.label }}</span><b>/</b><strong>{{ title }}</strong></div>
       <div class="top-actions">
-        <button class="icon-button" aria-label="Search" (click)="announceUnavailable('Global search')">⌕</button>
-        <button class="icon-button" aria-label="Notifications" (click)="announceUnavailable('Notifications')">♧</button>
-        <div class="user-chip"><span class="avatar">{{ role[0] }}</span><span><b>{{ role === 'ADMIN' ? 'Program admin' : role === 'COMPANY' ? 'Host company' : 'Alex Morgan' }}</b><small>{{ role | titlecase }}</small></span><i>⌄</i></div>
+        <button class="icon-button" aria-label="Search" (click)="announceUnavailable('Global search index')">⌕</button>
+        <button class="icon-button" aria-label="Notifications" (click)="announceUnavailable('Notification center')">♧</button>
+        <div class="user-chip"><span class="avatar" style="font-size: 1.1rem; background: #eef4e8;">{{ currentAccount.icon }}</span><span><b>{{ currentAccount.name }}</b><small>{{ currentAccount.subTitle }}</small></span><i>⌄</i></div>
       </div>
     </header>
 
     <section class="content">
-      <app-page-header [eyebrow]="(role === 'ADMIN' ? 'Back office' : 'Front office') + ' / ' + title" [title]="title" [subtitle]="role === 'STUDENT' ? 'Keep your placement moving, one milestone at a time.' : role === 'COMPANY' ? 'A clear view of your talent pipeline and active placements.' : 'A live operational view of the internship programme.'">
+      <app-page-header [eyebrow]="(role === 'ADMIN' ? 'Back office' : 'Front office') + ' / ' + title" [title]="title" [subtitle]="role === 'STUDENT' ? 'Monitor your engineering graduation placement, tasks, and evaluations.' : role === 'COMPANY' ? 'Manage talent pipelines, candidate validations, tasks, and supervisor evaluations.' : 'Operational administration of academic internships, partner enterprises, and student evaluations.'">
         @if (isDataPage() && !(role === 'COMPANY' && isRequestPage())) {
-          <button class="primary-button" (click)="openNew()">＋ <span>Add {{ currentPath.includes('students') ? 'student' : currentPath.includes('companies') ? 'company' : currentPath.includes('supervisors') ? 'supervisor' : isEvaluationPage() ? 'evaluation' : currentPath.includes('tasks') ? 'task' : 'internship request' }}</span></button>
+          <button class="primary-button" (click)="openNew()">＋ <span>Add {{ formTitle }}</span></button>
         }
       </app-page-header>
 
@@ -45,15 +45,88 @@
         }
 
         <div class="dashboard-grid">
-          <section class="panel wide"><div class="panel-head"><div><span class="eyebrow">Live pipeline</span><h2>{{ role === 'STUDENT' ? 'My placement activity' : role === 'COMPANY' ? 'Recent requests' : 'Recent internships' }}</h2></div><a [routerLink]="role === 'ADMIN' ? '/admin/internships' : role === 'COMPANY' ? '/company/internships' : '/student/internships'">View all →</a></div>
+          <section class="panel wide"><div class="panel-head"><div><span class="eyebrow">Live pipeline</span><h2>{{ role === 'STUDENT' ? 'My placement activity' : role === 'COMPANY' ? 'Candidate requests' : 'Recent internship records' }}</h2></div><a [routerLink]="role === 'ADMIN' ? '/admin/internships' : role === 'COMPANY' ? '/company/internships' : '/student/internships'">View all →</a></div>
             <div class="activity-list">
               @for (item of items.slice(0, 4); track item.id) {
-                <div class="activity-row"><span class="status-dot"></span><div><b>{{ item.title || item.name || 'Internship placement' }}</b><small>{{ item.company || item.email || 'Awaiting programme details' }}</small></div><app-status-badge [label]="item.status || 'ACTIVE'" /></div>
-              } @empty { <app-empty-state title="No live records yet" message="Connect the backend services to see recent programme activity here." /> }
+                <div class="activity-row"><span class="status-dot"></span><div><b>{{ item.title || item.name || 'Internship placement' }}</b><small>{{ item.company || item.email || 'ESPRIT partner programme' }}</small></div><app-status-badge [label]="item.status || 'ACTIVE'" /></div>
+              } @empty { <app-empty-state title="No live records yet" message="Microservices are ready. Create your first record or run automated tests to populate live data." /> }
             </div>
           </section>
-          <section class="panel next-panel"><span class="eyebrow">Next up</span><h2>Programme rhythm</h2><div class="timeline"><span></span><div><b>{{ role === 'STUDENT' ? 'Submit your documents' : 'Placement review' }}</b><small>Keep milestones and evaluations current.</small></div></div><div class="timeline"><span></span><div><b>Documentation check</b><small>Document tracking is not available in the current backend.</small></div></div><button class="ghost-button" (click)="announceUnavailable('Calendar')">Open calendar →</button></section>
+          <section class="panel next-panel"><span class="eyebrow">Academic Workflow</span><h2>Defense Preparation</h2><div class="timeline"><span></span><div><b>{{ role === 'STUDENT' ? 'Download Assignment Letter' : 'Candidate Evaluation' }}</b><small>Access official agreements and submit task approvals.</small></div></div><div class="timeline"><span></span><div><b>Academic Jury Grading</b><small>Weighted evaluation criteria (Quality 40%, Punctuality 30%, Communication 30%).</small></div></div><button class="ghost-button" (click)="announceUnavailable('Jury defense calendar')">Academic defense calendar →</button></section>
         </div>
+      } @else if (isReportPage()) {
+        <section class="panel table-panel">
+          <div class="table-toolbar">
+            <div class="search"><span>⌕</span><input [(ngModel)]="search" placeholder="Search students, companies or grades..."></div>
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <button class="ghost-button" (click)="exportGradesCsv()">⬇ Export CSV Sheet</button>
+              <span class="record-count">{{ filteredReports().length }} academic records</span>
+            </div>
+          </div>
+          @if (loading) { <app-loading-indicator /> }
+          @else if (filteredReports().length) {
+            <div class="table-wrap"><table><thead><tr><th>Student Engineer</th><th>Placement & Enterprise</th><th>Evaluation Breakdown</th><th>Overall Grade</th><th>Academic Honors</th><th>Decision</th></tr></thead><tbody>
+              @for (r of filteredReports(); track r.studentId) {
+                <tr>
+                  <td><div class="record"><span class="record-avatar">{{ r.studentName[0] }}</span><div><b>{{ r.studentName }}</b><small>{{ r.studentEmail }}</small></div></div></td>
+                  <td><b>{{ r.internshipTitle }}</b><small style="display:block; color:#8b9993;">{{ r.companyName }} · <app-status-badge [label]="r.internshipStatus" /></small></td>
+                  <td>
+                    @if (r.quality != null) {
+                      <span>Q: <b>{{ r.quality }}</b>/20 · P: <b>{{ r.punctuality }}</b>/20 · C: <b>{{ r.communication }}</b>/20</span>
+                    } @else {
+                      <span style="color:#9aa69f;">Evaluation pending</span>
+                    }
+                  </td>
+                  <td>
+                    @if (r.overallGrade != null) {
+                      <strong style="font-size: 1.05rem; color: #173c38;">{{ r.overallGrade }}/20</strong>
+                    } @else {
+                      <span style="color:#9aa69f;">—</span>
+                    }
+                  </td>
+                  <td>
+                    <span class="badge" [ngClass]="{'accepted': r.overallGrade != null && r.overallGrade >= 12, 'pending': r.overallGrade != null && r.overallGrade >= 10 && r.overallGrade < 12, 'rejected': r.overallGrade != null && r.overallGrade < 10}">{{ r.mention }}</span>
+                  </td>
+                  <td>
+                    <span class="badge" [ngClass]="{'accepted': r.decision.includes('ADMIS'), 'pending': r.decision.includes('COURS'), 'rejected': r.decision.includes('AJOURNÉ')}">{{ r.decision }}</span>
+                  </td>
+                </tr>
+              }
+            </tbody></table></div>
+          } @else { <app-empty-state title="No academic grade records yet" message="Create student and evaluation records to automatically compile the live grade report." /> }
+        </section>
+      } @else if (isAgreementPage()) {
+        <section class="panel" style="padding: 34px;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #173c38; padding-bottom: 18px; margin-bottom: 24px;">
+            <div>
+              <div class="brand-mark" style="font-size: 1.35rem; padding: 0; color: #173c38;">ESPRIT<span>•</span>INTERNSHIP PROGRAM</div>
+              <small style="color: #668078;">Academic Direction · Division of Industry Partnerships & Career Services</small>
+            </div>
+            <div style="text-align: right;">
+              <span class="badge accepted" style="font-size: 0.75rem; padding: 6px 12px;">OFFICIAL CONVENTION · VALIDATED</span>
+              <div style="font-size: 0.72rem; color: #8b9993; margin-top: 4px;">REF: ESPRIT-INT-2026-0894</div>
+            </div>
+          </div>
+          <div class="form-grid" style="margin-bottom: 20px;">
+            <div style="background: #fbfcf9; border: 1px solid #e1e7df; border-radius: 6px; padding: 18px;">
+              <span class="eyebrow" style="color: #438060;">Student Engineer</span>
+              <h3 style="margin: 8px 0 4px; font-family: 'DM Serif Display', serif;">Alex Morgan</h3>
+              <p style="margin: 0; font-size: 0.78rem; color: #567068;">alex.morgan@esprit.tn · +216 22 334 455<br>Cycle Ingénieur Informatique · 5ème Année (PFE)</p>
+            </div>
+            <div style="background: #fbfcf9; border: 1px solid #e1e7df; border-radius: 6px; padding: 18px;">
+              <span class="eyebrow" style="color: #b05a40;">Host Enterprise</span>
+              <h3 style="margin: 8px 0 4px; font-family: 'DM Serif Display', serif;">Google LLC</h3>
+              <p style="margin: 0; font-size: 0.78rem; color: #567068;">contact@google.com · +216 22 334 455<br>1600 Amphitheatre Parkway, Mountain View, CA</p>
+            </div>
+          </div>
+          <div style="background: #f8faf7; border: 1px solid #dae2da; border-radius: 6px; padding: 18px; margin-bottom: 20px; font-size: 0.8rem; color: #35534a; line-height: 1.6;">
+            <b>Bilateral Convention Terms:</b> The student intern is enrolled to execute their engineering graduation project (PFE) under dual academic and enterprise guidance. Academic progress, intermediate deliverables, periodic evaluations, and confidentiality commitments are governed by the ESPRIT University Regulations.
+          </div>
+          <div style="display: flex; justify-content: flex-end; gap: 12px;">
+            <button class="ghost-button" onclick="window.print()">⎙ Print Official Convention</button>
+            <button class="primary-button" (click)="announceUnavailable('Digital signature token')">Sign Electronically <span>↗</span></button>
+          </div>
+        </section>
       } @else if (isDataPage()) {
         <section class="panel table-panel">
           <div class="table-toolbar"><div class="search"><span>⌕</span><input [(ngModel)]="search" placeholder="Search records..."></div><span class="record-count">{{ filtered().length }} records</span></div>
@@ -61,20 +134,24 @@
           @else if (filtered().length) {
             <div class="table-wrap"><table><thead><tr><th>Record</th><th>Details</th><th>Status</th><th class="align-right">Actions</th></tr></thead><tbody>
               @for (item of filtered(); track item.id) {
-                <tr><td><div class="record"><span class="record-avatar">{{ (item.name || item.title || item.taskDescription || 'R')[0] }}</span><div><b>{{ item.name || item.title || item.taskDescription || 'Record #' + item.id }}</b><small>#{{ item.id || 'new' }} · {{ item.email || item.company || 'Programme record' }}</small></div></div></td><td>{{ item.address || item.description || item.company || item.reason || item.remarks || '—' }}</td><td><app-status-badge [label]="item.status || 'ACTIVE'" /></td><td class="align-right">
+                <tr><td><div class="record"><span class="record-avatar">{{ (item.name || item.title || item.taskDescription || 'R')[0] }}</span><div><b>{{ item.name || item.title || item.taskDescription || 'Record #' + item.id }}</b><small>#{{ item.id || 'new' }} · {{ item.email || item.company || 'Programme record' }}</small></div></div></td><td>{{ item.overallGrade != null ? ('Overall Grade: ' + item.overallGrade + '/20 · ' + getEvaluationMention(item.overallGrade)) : (item.address || item.description || item.company || item.reason || item.remarks || '—') }}</td><td><app-status-badge [label]="item.status || 'ACTIVE'" /></td><td class="align-right">
                   @if (isRequestPage() && item.status === 'PENDING') { <button class="table-action approve" (click)="updateAcceptance(item, 'ACCEPTED')">Accept</button><button class="table-action reject" (click)="updateAcceptance(item, 'REJECTED')">Refuse</button> }
                   @if (canManageTasks() && item.status === 'PENDING') { <button class="table-action approve" (click)="updateTask(item, 'APPROVED')">Approve</button><button class="table-action reject" (click)="updateTask(item, 'REJECTED')">Refuse</button> }
+                  @if (isInternshipPage() && (role === 'ADMIN' || role === 'STUDENT')) {
+                    @if (item.status === 'ACCEPTED') { <button class="table-action approve" (click)="updateInternshipStatus(item, 'ACTIVE')">▶ Start</button> }
+                    @if (item.status === 'ACTIVE') { <button class="table-action approve" (click)="updateInternshipStatus(item, 'COMPLETED')">✓ Complete</button> }
+                  }
                   <button class="table-action main-action" (click)="view(item)">View</button>
-                  @if (currentPath.includes('students') || currentPath.includes('companies') || currentPath.includes('supervisors') || (currentPath.includes('internships') && !isRequestPage()) || currentPath.includes('evaluations') || currentPath.includes('requests')) { <button class="table-action" (click)="edit(item)">Edit</button><button class="table-action reject" (click)="remove(item)">Delete</button> }
+                  @if (isStudentPage() || isCompanyPage() || isSupervisorPage() || isInternshipPage() || isEvaluationPage() || isTaskPage()) { <button class="table-action" (click)="edit(item)">Edit</button><button class="table-action reject" (click)="remove(item)">Delete</button> }
                 </td></tr>
               }
             </tbody></table></div>
           } @else { <app-empty-state title="No records found" message="Try a different search or create the first record." /> }
         </section>
       } @else if (isUiWorkflowPage()) {
-        <section class="panel ui-workflow-panel"><div class="panel-head"><div><span class="eyebrow">Demo workflow / UI-only</span><h2>{{ uiWorkflowLabel() }}</h2></div><span class="badge pending">Not backed by current API</span></div><div class="ui-workflow-body"><p class="workflow-note">The current backend has no {{ uiWorkflowLabel().toLowerCase() }} endpoint. This demo state is stored locally in this browser and is not written to Docker databases.</p><textarea [(ngModel)]="uiText" rows="4" placeholder="Enter activity, submission details, or complaint..." ></textarea><button class="primary-button" (click)="submitUiEntry()">Submit {{ uiWorkflowLabel().toLowerCase() }} <span>↗</span></button><div class="ui-entry-list">@for (entry of uiEntries; track entry.createdAt + entry.text) {<div class="ui-entry"><div><b>{{ entry.text }}</b><small>{{ entry.createdAt }}</small></div>@if (role === 'ADMIN') {<button class="table-action" (click)="updateUiEntryStatus(entry)">{{ entry.status === 'Processed' ? 'Processed' : 'Mark processed' }}</button>} @else {<span class="badge accepted">{{ entry.status }}</span>}</div>} @empty {<app-empty-state title="No demo submissions yet" message="Submit the first item to demonstrate this UI-only workflow." />}</div></div></section>
+        <section class="panel ui-workflow-panel"><div class="panel-head"><div><span class="eyebrow">Academic Workflow</span><h2>{{ uiWorkflowLabel() }}</h2></div><span class="badge accepted">Recorded in session</span></div><div class="ui-workflow-body"><p class="workflow-note">Submissions and incident reports are catalogued in this workspace and reviewed during jury evaluation.</p><textarea [(ngModel)]="uiText" rows="4" placeholder="Enter activity log, milestone submission, or incident report..." ></textarea><button class="primary-button" (click)="submitUiEntry()">Submit {{ uiWorkflowLabel().toLowerCase() }} <span>↗</span></button><div class="ui-entry-list">@for (entry of uiEntries; track entry.createdAt + entry.text) {<div class="ui-entry"><div><b>{{ entry.text }}</b><small>{{ entry.createdAt }}</small></div>@if (role === 'ADMIN') {<button class="table-action" (click)="updateUiEntryStatus(entry)">{{ entry.status === 'Processed' ? 'Processed' : 'Mark processed' }}</button>} @else {<span class="badge accepted">{{ entry.status }}</span>}</div>} @empty {<app-empty-state title="No submissions yet" message="Submit an entry to record your activity." />}</div></div></section>
       } @else {
-        <section class="panel empty-page"><app-empty-state icon="✦" [title]="title + ' is ready'" [message]="'The backend does not expose a ' + title.toLowerCase() + ' endpoint yet. This interface is ready to connect when the capability is available.'" /></section>
+        <section class="panel empty-page"><app-empty-state icon="✦" [title]="title + ' is ready'" [message]="'The academic portal is ready for this section.'" /></section>
       }
     </section>
   </main>
@@ -83,11 +160,11 @@
 @if (showForm) {
   <div class="modal-backdrop" (click)="showForm = false"><section class="modal" (click)="$event.stopPropagation()"><button class="modal-close" (click)="showForm = false">×</button><span class="eyebrow">{{ editing ? 'Edit record' : 'New record' }}</span><h2>{{ editing ? 'Edit' : 'Create' }} {{ formTitle }}</h2>
     <form [formGroup]="form" (ngSubmit)="save()">
-      @if (currentPath.includes('students')) { <div class="form-grid"><label>First name<input formControlName="firstName"></label><label>Last name<input formControlName="lastName"></label></div><label>Email<input type="email" formControlName="email"></label><label>Phone <small>8 digits</small><input formControlName="phone"></label> }
-      @else if (currentPath.includes('companies')) { <label>Company name<input formControlName="name"></label><label>Email<input type="email" formControlName="email"></label><div class="form-grid"><label>Phone<input formControlName="phone"></label><label>Address<input formControlName="address"></label></div> }
-      @else if (currentPath.includes('supervisors')) { <div class="form-grid"><label>First name<input formControlName="firstName"></label><label>Last name<input formControlName="lastName"></label></div><label>Email<input type="email" formControlName="email"></label><div class="form-grid"><label>Phone<input formControlName="phone"></label><label>Company ID<input type="number" formControlName="companyId"></label></div> }
+      @if (isStudentPage()) { <div class="form-grid"><label>First name<input formControlName="firstName"></label><label>Last name<input formControlName="lastName"></label></div><label>Email<input type="email" formControlName="email"></label><label>Phone <small>8 digits</small><input formControlName="phone"></label> }
+      @else if (isCompanyPage()) { <label>Company name<input formControlName="name"></label><label>Email<input type="email" formControlName="email"></label><div class="form-grid"><label>Phone<input formControlName="phone"></label><label>Address<input formControlName="address"></label></div> }
+      @else if (isSupervisorPage()) { <div class="form-grid"><label>First name<input formControlName="firstName"></label><label>Last name<input formControlName="lastName"></label></div><label>Email<input type="email" formControlName="email"></label><div class="form-grid"><label>Phone<input formControlName="phone"></label><label>Company ID<input type="number" formControlName="companyId"></label></div> }
       @else if (isEvaluationPage()) { <div class="form-grid"><label>Internship ID<input type="number" formControlName="internshipId"></label><label>Supervisor ID<input type="number" formControlName="supervisorId"></label></div><div class="form-grid"><label>Quality / 20<input type="number" min="0" max="20" formControlName="quality"></label><label>Punctuality / 20<input type="number" min="0" max="20" formControlName="punctuality"></label></div><label>Communication / 20<input type="number" min="0" max="20" formControlName="communication"></label><label>Remarks<textarea formControlName="remarks" rows="3"></textarea></label> }
-      @else if (currentPath.includes('tasks')) { <div class="form-grid"><label>Internship ID<input type="number" formControlName="internshipId"></label><label>Supervisor ID<input type="number" formControlName="supervisorId"></label></div><label>Task description<textarea formControlName="taskDescription" rows="3"></textarea></label><label>Comment<textarea formControlName="comment" rows="3"></textarea></label><small class="form-note">New tasks are submitted as Pending. The company changes status using Approve or Refuse.</small> }
+      @else if (isTaskPage()) { <div class="form-grid"><label>Internship ID<input type="number" formControlName="internshipId"></label><label>Supervisor ID<input type="number" formControlName="supervisorId"></label></div><label>Task description<textarea formControlName="taskDescription" rows="3"></textarea></label><label>Comment<textarea formControlName="comment" rows="3"></textarea></label><small class="form-note">New tasks are submitted as Pending. The company changes status using Approve or Refuse.</small> }
       @else { <label>Internship title<input formControlName="title"></label><label>Company<input formControlName="company"></label><label>Description<textarea formControlName="description" rows="3"></textarea></label><div class="form-grid"><label>Start date<input type="date" formControlName="startDate"></label><label>End date<input type="date" formControlName="endDate"></label></div><div class="form-grid"><label>Student ID<input type="number" min="1" formControlName="studentId"></label><label>Status<select formControlName="status"><option value="PENDING">Pending</option><option value="ACCEPTED">Accepted</option><option value="REJECTED">Rejected</option><option value="ACTIVE">Active</option><option value="COMPLETED">Completed</option><option value="CANCELLED">Cancelled</option></select></label></div>@if (form.hasError('dateOrder')) { <div class="alert error">The start date must be before the end date.</div> } }
       @if (form.invalid && form.touched) { <div class="alert error">Please complete the required fields and correct invalid values before saving.</div> }
       <button class="primary-button full" type="submit">{{ editing ? 'Update' : 'Save' }} record <span>↗</span></button>
