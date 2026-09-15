@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, HostListener, inject } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AbstractControl, ReactiveFormsModule, FormsModule, FormBuilder, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
@@ -39,6 +39,18 @@ export interface AppNotification {
   time: string;
   type: 'internship' | 'task' | 'eval' | 'convention' | 'complaint';
   unread: boolean;
+}
+
+export interface SearchResultItem {
+  id: string | number;
+  type: 'STUDENT' | 'COMPANY' | 'INTERNSHIP' | 'SUPERVISOR' | 'TASK' | 'DOCUMENT';
+  typeLabel: string;
+  icon: string;
+  title: string;
+  subtitle: string;
+  badge?: string;
+  badgeClass?: string;
+  url: string;
 }
 
 @Component({
@@ -537,15 +549,253 @@ export class WorkspaceComponent {
     setTimeout(() => this.notice = '', 3500);
   }
 
-  triggerSearch() {
-    const input = document.querySelector('.search input') as HTMLInputElement | null;
-    if (input) {
-      input.focus();
-      input.select();
-    } else {
-      this.notice = 'Recherche : Ouvrez une rubrique (ex: Mes stages, Entreprises) pour filtrer les enregistrements.';
-      setTimeout(() => this.notice = '', 3500);
+  globalSearchOpen = false;
+  globalSearchQuery = '';
+  globalSearchResults: SearchResultItem[] = [];
+  globalSearchLoading = false;
+  private cachedGlobalData: {
+    students: Student[];
+    companies: Company[];
+    internships: Internship[];
+    supervisors: Supervisor[];
+    tasks: TaskApproval[];
+  } | null = null;
+
+  openGlobalSearch() {
+    this.globalSearchOpen = true;
+    this.globalSearchQuery = '';
+    this.globalSearchResults = [];
+    this.fetchGlobalSearchData();
+  }
+
+  @HostListener('window:keydown', ['$event'])
+  handleKeyboardEvent(event: KeyboardEvent) {
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+      event.preventDefault();
+      if (this.globalSearchOpen) {
+        this.closeGlobalSearch();
+      } else {
+        this.openGlobalSearch();
+      }
+    } else if (event.key === 'Escape' && this.globalSearchOpen) {
+      this.closeGlobalSearch();
     }
+  }
+
+  closeGlobalSearch() {
+    this.globalSearchOpen = false;
+  }
+
+  fetchGlobalSearchData() {
+    this.globalSearchLoading = true;
+    forkJoin({
+      students: this.safeList(this.api.students.list()),
+      companies: this.safeList(this.api.companies.list()),
+      internships: this.safeList(this.api.internships.list()),
+      supervisors: this.safeList(this.api.supervisors.list()),
+      tasks: this.safeList(this.api.tasks.list())
+    }).subscribe(data => {
+      this.cachedGlobalData = data;
+      this.globalSearchLoading = false;
+      this.performGlobalSearch();
+      setTimeout(() => {
+        const input = document.getElementById('globalSearchInput') as HTMLInputElement | null;
+        if (input) input.focus();
+      }, 60);
+    });
+  }
+
+  onGlobalSearch() {
+    this.performGlobalSearch();
+  }
+
+  performGlobalSearch() {
+    const q = (this.globalSearchQuery || '').trim().toLowerCase();
+    if (!q || !this.cachedGlobalData) {
+      this.globalSearchResults = [];
+      return;
+    }
+
+    const { students, companies, internships, supervisors, tasks } = this.cachedGlobalData;
+    const results: SearchResultItem[] = [];
+
+    // 1. STAGES / INTERNSHIPS
+    internships.forEach(item => {
+      const match = (item.title && item.title.toLowerCase().includes(q)) ||
+                    (item.company && item.company.toLowerCase().includes(q)) ||
+                    (item.description && item.description.toLowerCase().includes(q)) ||
+                    (item.status && item.status.toLowerCase().includes(q));
+      if (match) {
+        let url = '/admin/internships';
+        if (this.role === 'STUDENT') {
+          url = '/student/internships';
+        } else if (this.role === 'COMPANY') {
+          url = '/company/internships';
+        }
+        results.push({
+          id: `stage-${item.id}`,
+          type: 'INTERNSHIP',
+          typeLabel: 'Stage PFE',
+          icon: '📋',
+          title: item.title,
+          subtitle: `${item.company} · ${item.description || 'Projet de fin d\'études'}`,
+          badge: item.status,
+          badgeClass: (item.status || '').toLowerCase(),
+          url
+        });
+      }
+    });
+
+    // 2. ENTREPRISES / COMPANIES
+    companies.forEach(item => {
+      const match = (item.name && item.name.toLowerCase().includes(q)) ||
+                    (item.email && item.email.toLowerCase().includes(q)) ||
+                    (item.address && item.address.toLowerCase().includes(q));
+      if (match) {
+        let url = '/admin/companies';
+        if (this.role === 'STUDENT') {
+          url = '/student/company';
+        } else if (this.role === 'COMPANY') {
+          url = '/company/dashboard';
+        }
+        results.push({
+          id: `comp-${item.id}`,
+          type: 'COMPANY',
+          typeLabel: 'Entreprise Partenaire',
+          icon: '🏢',
+          title: item.name,
+          subtitle: `${item.address} · Contact: ${item.email}`,
+          badge: item.phone,
+          badgeClass: 'active',
+          url
+        });
+      }
+    });
+
+    // 3. ENCADRANTS / SUPERVISORS
+    supervisors.forEach(item => {
+      const full = `${item.firstName} ${item.lastName}`.toLowerCase();
+      const match = full.includes(q) ||
+                    (item.email && item.email.toLowerCase().includes(q)) ||
+                    (item.phone && item.phone.includes(q));
+      if (match) {
+        const comp = companies.find(c => c.id === item.companyId);
+        let url = '/admin/supervisors';
+        if (this.role === 'STUDENT') {
+          url = '/student/supervisor';
+        } else if (this.role === 'COMPANY') {
+          url = '/company/supervisors';
+        }
+        results.push({
+          id: `sup-${item.id}`,
+          type: 'SUPERVISOR',
+          typeLabel: 'Encadrant Professionnel',
+          icon: '👤',
+          title: `${item.firstName} ${item.lastName}`,
+          subtitle: `${comp ? comp.name : 'Entreprise'} · ${item.email}`,
+          badge: `Tél: ${item.phone}`,
+          url
+        });
+      }
+    });
+
+    // 4. ÉTUDIANTS / STUDENTS (Accessible pour ADMIN / STAGE_DEPT / PEDAGOGICAL_DEPT)
+    if (this.role === 'ADMIN') {
+      students.forEach(item => {
+        const full = `${item.firstName} ${item.lastName}`.toLowerCase();
+        const match = full.includes(q) ||
+                      (item.email && item.email.toLowerCase().includes(q)) ||
+                      (item.phone && item.phone.includes(q));
+        if (match) {
+          results.push({
+            id: `stud-${item.id}`,
+            type: 'STUDENT',
+            typeLabel: 'Élève-Ingénieur ESPRIT',
+            icon: '👨‍🎓',
+            title: `${item.firstName} ${item.lastName}`,
+            subtitle: `${item.email} · Tél: ${item.phone}`,
+            badge: `#${item.id}`,
+            url: '/admin/students'
+          });
+        }
+      });
+    }
+
+    // 5. TÂCHES / LIVRABLES
+    tasks.forEach(item => {
+      const match = (item.taskDescription && item.taskDescription.toLowerCase().includes(q)) ||
+                    (item.comment && item.comment.toLowerCase().includes(q)) ||
+                    (item.status && item.status.toLowerCase().includes(q));
+      if (match) {
+        let url = '/admin/dashboard';
+        if (this.role === 'STUDENT') {
+          url = '/student/tasks';
+        } else if (this.role === 'COMPANY') {
+          url = '/company/tasks';
+        }
+        results.push({
+          id: `task-${item.id}`,
+          type: 'TASK',
+          typeLabel: 'Livrable / Tâche',
+          icon: '✓',
+          title: item.taskDescription,
+          subtitle: item.comment || 'Livrable soumis par le stagiaire',
+          badge: item.status,
+          badgeClass: (item.status || '').toLowerCase(),
+          url
+        });
+      }
+    });
+
+    // 6. DOCUMENTS / CONVENTIONS
+    if (q.includes('conv') || q.includes('doc') || q.includes('affect') || q.includes('bilan') || q.includes('note')) {
+      if (this.role === 'STUDENT') {
+        results.push({
+          id: 'doc-conv',
+          type: 'DOCUMENT',
+          typeLabel: 'Convention de Stage',
+          icon: '▤',
+          title: 'Convention tripartite officielle ESPRIT',
+          subtitle: 'Document validé entre l\'école, l\'entreprise Google Tunisia et l\'étudiant',
+          badge: 'Officiel',
+          badgeClass: 'accepted',
+          url: '/student/documents'
+        });
+      } else if (this.actor === 'STAGE_DEPT') {
+        results.push({
+          id: 'doc-conv-admin',
+          type: 'DOCUMENT',
+          typeLabel: 'Gestion Conventions',
+          icon: '▤',
+          title: 'Conventions de stage & affectations',
+          subtitle: 'Registre central des conventions de stage PFE',
+          badge: 'Validé',
+          badgeClass: 'accepted',
+          url: '/admin/documents'
+        });
+      } else if (this.actor === 'PEDAGOGICAL_DEPT') {
+        results.push({
+          id: 'doc-reports',
+          type: 'DOCUMENT',
+          typeLabel: 'Bilan Académique & Notes',
+          icon: '▥',
+          title: 'Fiches de notes, jurys & export CSV',
+          subtitle: 'Relevé officiel des soutenances et délibérations',
+          badge: 'Délibérations',
+          badgeClass: 'accepted',
+          url: '/admin/reports'
+        });
+      }
+    }
+
+    this.globalSearchResults = results.slice(0, 10);
+  }
+
+  selectSearchResult(item: SearchResultItem) {
+    this.globalSearchOpen = false;
+    this.router.navigateByUrl(item.url);
+    this.notice = `Navigué vers : ${item.title}`;
+    setTimeout(() => this.notice = '', 3000);
   }
 
   isUiWorkflowPage() {

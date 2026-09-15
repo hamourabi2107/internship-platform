@@ -17,7 +17,7 @@
     <header class="topbar">
       <div class="crumb"><span>{{ currentAccount.label }}</span><b>/</b><strong>{{ title }}</strong></div>
       <div class="top-actions">
-        <button class="icon-button" aria-label="Recherche" (click)="triggerSearch()" title="Rechercher dans les données">⌕</button>
+        <button class="icon-button" aria-label="Recherche" (click)="openGlobalSearch()" title="Recherche globale rapide">⌕</button>
         <button class="icon-button notif-btn" aria-label="Notifications" (click)="toggleNotifications()">
           ♧
           @if (unreadNotificationCount > 0) {
@@ -53,6 +53,86 @@
                 </div>
               </div>
             }
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Global Quick Search Modal (Spotlight) -->
+    @if (globalSearchOpen) {
+      <div class="search-overlay" (click)="closeGlobalSearch()">
+        <div class="search-modal" (click)="$event.stopPropagation()">
+          <div class="search-modal-header">
+            <span class="search-modal-icon">⌕</span>
+            <input
+              id="globalSearchInput"
+              type="text"
+              [(ngModel)]="globalSearchQuery"
+              (input)="onGlobalSearch()"
+              (keydown.escape)="closeGlobalSearch()"
+              placeholder="Rechercher par mot-clé (ex: Google, BenAli, DevOps, Sprint, Convention)..."
+              autocomplete="off"
+            />
+            @if (globalSearchQuery) {
+              <button class="search-clear-btn" (click)="globalSearchQuery = ''; onGlobalSearch()" title="Effacer">×</button>
+            }
+            <button class="search-modal-close" (click)="closeGlobalSearch()" title="Fermer (Échap)">✕</button>
+          </div>
+
+          <div class="search-modal-body">
+            @if (globalSearchLoading) {
+              <div class="search-modal-loading">
+                <app-loading-indicator />
+                <span style="color: #6a8077; font-size: 0.8rem; margin-top: 10px;">Indexation des données en direct...</span>
+              </div>
+            } @else if (!globalSearchQuery) {
+              <div class="search-modal-hint">
+                <span class="hint-eyebrow">Suggestions rapides</span>
+                <div class="hint-chips">
+                  <button type="button" (click)="globalSearchQuery = 'Google'; onGlobalSearch()">🏢 Google</button>
+                  <button type="button" (click)="globalSearchQuery = 'BenAli'; onGlobalSearch()">👨‍🎓 BenAli</button>
+                  <button type="button" (click)="globalSearchQuery = 'Cloud'; onGlobalSearch()">📋 Cloud & Microservices</button>
+                  <button type="button" (click)="globalSearchQuery = 'Convention'; onGlobalSearch()">▤ Convention</button>
+                  <button type="button" (click)="globalSearchQuery = 'Sprint'; onGlobalSearch()">✓ Sprint</button>
+                </div>
+                <p>Tapez un mot-clé pour rechercher instantanément à travers les stages, entreprises, encadrants et livrables.</p>
+              </div>
+            } @else if (globalSearchResults.length > 0) {
+              <div class="search-results-list">
+                <div class="results-header">
+                  <span>{{ globalSearchResults.length }} résultat(s) correspondant(s)</span>
+                  <small>Cliquez pour naviguer directement</small>
+                </div>
+                @for (item of globalSearchResults; track item.id) {
+                  <div class="search-result-row" (click)="selectSearchResult(item)">
+                    <div class="result-icon-wrap">{{ item.icon }}</div>
+                    <div class="result-content">
+                      <div class="result-top">
+                        <b>{{ item.title }}</b>
+                        <span class="type-pill">{{ item.typeLabel }}</span>
+                      </div>
+                      <small>{{ item.subtitle }}</small>
+                    </div>
+                    @if (item.badge) {
+                      <span class="badge" [ngClass]="item.badgeClass || 'pending'">{{ item.badge }}</span>
+                    }
+                    <span class="result-arrow">→</span>
+                  </div>
+                }
+              </div>
+            } @else {
+              <div class="search-empty-state">
+                <span class="empty-emoji">🔍</span>
+                <h4>Aucun résultat pour « {{ globalSearchQuery }} »</h4>
+                <p>Vérifiez l'orthographe ou essayez un nom d'entreprise (ex: Google, FinTech), un intitulé de stage ou un encadrant.</p>
+              </div>
+            }
+          </div>
+
+          <div class="search-modal-footer">
+            <span><b>Clic :</b> Naviguer</span>
+            <span><b>Échap :</b> Fermer</span>
+            <span><b>Espace actif :</b> {{ currentAccount.label }}</span>
           </div>
         </div>
       </div>
