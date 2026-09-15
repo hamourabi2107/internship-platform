@@ -119,14 +119,14 @@ pipeline {
                         sh '''
                             docker compose down --remove-orphans || true
                             docker compose up -d
-                            echo "Waiting 20 seconds for initial bootstrap..."
-                            sleep 20
+                            echo "Waiting 35 seconds for initial bootstrap..."
+                            sleep 35
                         '''
                     } else {
                         bat '''
                             docker compose down --remove-orphans
                             docker compose up -d
-                            timeout /t 20 /nobreak
+                            timeout /t 35 /nobreak
                         '''
                     }
                 }

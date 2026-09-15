@@ -12,12 +12,12 @@ function Test-Endpoint {
         [string]$Name,
         [string]$Url,
         [int]$MaxAttempts = 30,
-        [int]$DelaySeconds = 3
+        [int]$DelaySeconds = 5
     )
     Write-Host -NoNewline "Checking $Name ($Url) ... "
     for ($i = 1; $i -le $MaxAttempts; $i++) {
         try {
-            $resp = Invoke-WebRequest -Uri $Url -TimeoutSec 5 -UseBasicParsing
+            $resp = Invoke-WebRequest -Uri $Url -TimeoutSec 15 -UseBasicParsing
             if ($resp.StatusCode -ge 200 -and $resp.StatusCode -lt 400) {
                 Write-Host "OK" -ForegroundColor Green
                 return $true

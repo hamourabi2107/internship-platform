@@ -42,3 +42,6 @@ dist/
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Local tools
+scripts/vm-exec.ps1
