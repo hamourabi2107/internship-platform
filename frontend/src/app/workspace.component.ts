@@ -1,5 +1,5 @@
 import { Component, HostListener, inject } from '@angular/core';
-import { ActivatedRoute, Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { ActivatedRoute, NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AbstractControl, ReactiveFormsModule, FormsModule, FormBuilder, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
 import { Observable, catchError, forkJoin, of, timeout } from 'rxjs';
@@ -162,11 +162,19 @@ export class WorkspaceComponent {
   gradeReports: GradeReportItem[] = [];
 
   constructor() {
-    this.route.url.subscribe(parts => {
-      this.currentPath = parts.map(p => p.path).join('/');
-      this.load();
-      this.loadUiEntries();
+    this.syncPathAndLoad();
+    this.router.events.subscribe(event => {
+      if (event instanceof NavigationEnd) {
+        this.syncPathAndLoad();
+      }
     });
+  }
+
+  private syncPathAndLoad() {
+    const url = this.router.url.split('?')[0];
+    this.currentPath = url.replace(/^\/+/, '');
+    this.load();
+    this.loadUiEntries();
   }
 
   get title() {
@@ -257,6 +265,7 @@ export class WorkspaceComponent {
       !this.isEvaluationPage() &&
       !this.isTaskPage() &&
       !this.isUiWorkflowPage() &&
+      !this.isAgreementPage() &&
       !this.currentPath.endsWith('dashboard');
   }
 
@@ -368,7 +377,7 @@ export class WorkspaceComponent {
   }
 
   private safeList<T>(request: Observable<T[]>) {
-    return request.pipe(timeout({ first: 2500 }), catchError(() => of([] as T[])));
+    return request.pipe(timeout({ first: 15000 }), catchError(() => of([] as T[])));
   }
 
   private loadDashboard() {

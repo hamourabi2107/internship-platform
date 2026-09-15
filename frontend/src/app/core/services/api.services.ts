@@ -8,8 +8,11 @@ export class ApiService {
   private get base(): string {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('internship-api-url');
-      if (stored && (stored.startsWith('http://192.168.') || stored.startsWith('http://localhost:8083'))) {
+      if (stored && stored.startsWith('http://192.168.')) {
         return stored.replace(/\/+$/, '');
+      }
+      if (stored && stored.includes('localhost:8083')) {
+        localStorage.removeItem('internship-api-url');
       }
     }
     return (environment.apiUrl || 'http://192.168.56.10:8083').replace(/\/+$/, '');
