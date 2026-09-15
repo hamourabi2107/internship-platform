@@ -8,7 +8,7 @@
       }
     </nav>
     <div class="sidebar-foot">
-      <div class="support-card"><small>Support Académique</small><b>ESPRIT Placement Office</b><span>→</span></div>
+      <div class="support-card"><small>Support Académique</small><b>Direction des Stages ESPRIT</b><span>→</span></div>
       <button class="logout" (click)="logout()">↪ <span>Déconnexion</span></button>
     </div>
   </aside>
@@ -17,16 +17,53 @@
     <header class="topbar">
       <div class="crumb"><span>{{ currentAccount.label }}</span><b>/</b><strong>{{ title }}</strong></div>
       <div class="top-actions">
-        <button class="icon-button" aria-label="Search" (click)="announceUnavailable('Global search index')">⌕</button>
-        <button class="icon-button" aria-label="Notifications" (click)="announceUnavailable('Notification center')">♧</button>
-        <div class="user-chip"><span class="avatar" style="font-size: 1.1rem; background: #eef4e8;">{{ currentAccount.icon }}</span><span><b>{{ currentAccount.name }}</b><small>{{ currentAccount.subTitle }}</small></span><i>⌄</i></div>
+        <button class="icon-button" aria-label="Recherche" (click)="announceUnavailable('Recherche globale')">⌕</button>
+        <button class="icon-button notif-btn" aria-label="Notifications" (click)="toggleNotifications()">
+          ♧
+          @if (unreadNotificationCount > 0) {
+            <span class="notif-badge">{{ unreadNotificationCount }}</span>
+          }
+        </button>
+        <div class="user-chip">
+          <span class="avatar" style="font-size: 1.1rem; background: #eef4e8;">{{ currentAccount.icon }}</span>
+          <span><b>{{ currentAccount.name }}</b><small>{{ currentAccount.subTitle }}</small></span>
+          <i>⌄</i>
+        </div>
       </div>
     </header>
 
+    <!-- Notification Drawer -->
+    @if (notificationsOpen) {
+      <div class="notif-overlay" (click)="notificationsOpen = false">
+        <div class="notif-drawer" (click)="$event.stopPropagation()">
+          <div class="notif-head">
+            <h3>Notifications en direct</h3>
+            <button class="ghost-button small-btn" (click)="markAllNotificationsRead()">Tout marquer comme lu</button>
+          </div>
+          <div class="notif-list">
+            @for (n of notifications; track n.id) {
+              <div class="notif-item" [class.unread]="n.unread">
+                <span class="notif-dot"></span>
+                <div>
+                  <b>{{ n.title }}</b>
+                  <p>{{ n.message }}</p>
+                  <small>{{ n.time }}</small>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    }
+
     <section class="content">
-      <app-page-header [eyebrow]="(role === 'ADMIN' ? 'Back office' : 'Front office') + ' / ' + title" [title]="title" [subtitle]="role === 'STUDENT' ? 'Monitor your engineering graduation placement, tasks, and evaluations.' : role === 'COMPANY' ? 'Manage talent pipelines, candidate validations, tasks, and supervisor evaluations.' : 'Operational administration of academic internships, partner enterprises, and student evaluations.'">
+      <app-page-header
+        [eyebrow]="currentAccount.label + ' / ' + title"
+        [title]="title"
+        [subtitle]="role === 'STUDENT' ? 'Suivez votre stage de fin d\'études (PFE), livrables et évaluations académiques.' : role === 'COMPANY' ? 'Gérez les candidatures, valideurs de livrables et évaluations des stagiaires.' : 'Administration académique des stages, entreprises partenaires et jurys de soutenance.'"
+      >
         @if (isDataPage() && !(role === 'COMPANY' && isRequestPage())) {
-          <button class="primary-button" (click)="openNew()">＋ <span>Add {{ formTitle }}</span></button>
+          <button class="primary-button" (click)="openNew()">＋ <span>Ajouter {{ formTitle }}</span></button>
         }
       </app-page-header>
 
@@ -45,36 +82,36 @@
         }
 
         <div class="dashboard-grid">
-          <section class="panel wide"><div class="panel-head"><div><span class="eyebrow">Live pipeline</span><h2>{{ role === 'STUDENT' ? 'My placement activity' : role === 'COMPANY' ? 'Candidate requests' : 'Recent internship records' }}</h2></div><a [routerLink]="role === 'ADMIN' ? '/admin/internships' : role === 'COMPANY' ? '/company/internships' : '/student/internships'">View all →</a></div>
+          <section class="panel wide"><div class="panel-head"><div><span class="eyebrow">Activité en direct</span><h2>{{ role === 'STUDENT' ? 'Mon stage en cours' : role === 'COMPANY' ? 'Candidatures reçues' : 'Suivi des stages de l\'école' }}</h2></div><a [routerLink]="role === 'ADMIN' ? '/admin/internships' : role === 'COMPANY' ? '/company/internships' : '/student/internships'">Voir tout →</a></div>
             <div class="activity-list">
               @for (item of items.slice(0, 4); track item.id) {
-                <div class="activity-row"><span class="status-dot"></span><div><b>{{ item.title || item.name || 'Internship placement' }}</b><small>{{ item.company || item.email || 'ESPRIT partner programme' }}</small></div><app-status-badge [label]="item.status || 'ACTIVE'" /></div>
-              } @empty { <app-empty-state title="No live records yet" message="Microservices are ready. Create your first record or run automated tests to populate live data." /> }
+                <div class="activity-row"><span class="status-dot"></span><div><b>{{ item.title || item.name || 'Stage PFE' }}</b><small>{{ item.company || item.email || 'Partenaire ESPRIT' }}</small></div><app-status-badge [label]="item.status || 'PENDING'" /></div>
+              } @empty { <app-empty-state title="Aucun stage actif pour l'instant" message="Les microservices sont connectés et prêts. Soumettez une demande pour débuter le workflow." /> }
             </div>
           </section>
-          <section class="panel next-panel"><span class="eyebrow">Academic Workflow</span><h2>Defense Preparation</h2><div class="timeline"><span></span><div><b>{{ role === 'STUDENT' ? 'Download Assignment Letter' : 'Candidate Evaluation' }}</b><small>Access official agreements and submit task approvals.</small></div></div><div class="timeline"><span></span><div><b>Academic Jury Grading</b><small>Weighted evaluation criteria (Quality 40%, Punctuality 30%, Communication 30%).</small></div></div><button class="ghost-button" (click)="announceUnavailable('Jury defense calendar')">Academic defense calendar →</button></section>
+          <section class="panel next-panel"><span class="eyebrow">Calendrier Académique</span><h2>Préparation de la Soutenance</h2><div class="timeline"><span></span><div><b>{{ role === 'STUDENT' ? 'Convention officielle & convention tripartite' : 'Validation administrative des stages' }}</b><small>Assurez-vous que l'ensemble des fiches et conventions sont signées.</small></div></div><div class="timeline"><span></span><div><b>Grille d'évaluation chiffrée</b><small>Critères pondérés : Qualité technique 40%, Ponctualité 30%, Communication 30%.</small></div></div><button class="ghost-button" (click)="announceUnavailable('Calendrier des soutenances')">Consulter le calendrier des soutenances →</button></section>
         </div>
       } @else if (isReportPage()) {
         <section class="panel table-panel">
           <div class="table-toolbar">
-            <div class="search"><span>⌕</span><input [(ngModel)]="search" placeholder="Search students, companies or grades..."></div>
+            <div class="search"><span>⌕</span><input [(ngModel)]="search" placeholder="Rechercher étudiant, entreprise..."></div>
             <div style="display: flex; gap: 10px; align-items: center;">
-              <button class="ghost-button" (click)="exportGradesCsv()">⬇ Export CSV Sheet</button>
-              <span class="record-count">{{ filteredReports().length }} academic records</span>
+              <button class="ghost-button" (click)="exportGradesCsv()">⬇ Exporter le Bilan CSV</button>
+              <span class="record-count">{{ filteredReports().length }} fiches de notes</span>
             </div>
           </div>
           @if (loading) { <app-loading-indicator /> }
           @else if (filteredReports().length) {
-            <div class="table-wrap"><table><thead><tr><th>Student Engineer</th><th>Placement & Enterprise</th><th>Evaluation Breakdown</th><th>Overall Grade</th><th>Academic Honors</th><th>Decision</th></tr></thead><tbody>
+            <div class="table-wrap"><table><thead><tr><th>Élève Ingénieur</th><th>Stage & Entreprise</th><th>Détail Évaluation</th><th>Note Finale</th><th>Mention Jury</th><th>Décision</th></tr></thead><tbody>
               @for (r of filteredReports(); track r.studentId) {
                 <tr>
                   <td><div class="record"><span class="record-avatar">{{ r.studentName[0] }}</span><div><b>{{ r.studentName }}</b><small>{{ r.studentEmail }}</small></div></div></td>
                   <td><b>{{ r.internshipTitle }}</b><small style="display:block; color:#8b9993;">{{ r.companyName }} · <app-status-badge [label]="r.internshipStatus" /></small></td>
                   <td>
                     @if (r.quality != null) {
-                      <span>Q: <b>{{ r.quality }}</b>/20 · P: <b>{{ r.punctuality }}</b>/20 · C: <b>{{ r.communication }}</b>/20</span>
+                      <span>Qualité : <b>{{ r.quality }}</b>/20 · Ponctualité : <b>{{ r.punctuality }}</b>/20 · Comm : <b>{{ r.communication }}</b>/20</span>
                     } @else {
-                      <span style="color:#9aa69f;">Evaluation pending</span>
+                      <span style="color:#9aa69f;">Évaluation en attente</span>
                     }
                   </td>
                   <td>
@@ -93,85 +130,127 @@
                 </tr>
               }
             </tbody></table></div>
-          } @else { <app-empty-state title="No academic grade records yet" message="Create student and evaluation records to automatically compile the live grade report." /> }
+          } @else { <app-empty-state title="Aucune fiche de notes" message="Les fiches de notes se génèrent automatiquement dès que l'évaluation entreprise est saisie." /> }
         </section>
       } @else if (isAgreementPage()) {
         <section class="panel" style="padding: 34px;">
           <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #173c38; padding-bottom: 18px; margin-bottom: 24px;">
             <div>
-              <div class="brand-mark" style="font-size: 1.35rem; padding: 0; color: #173c38;">ESPRIT<span>•</span>INTERNSHIP PROGRAM</div>
-              <small style="color: #668078;">Academic Direction · Division of Industry Partnerships & Career Services</small>
+              <div class="brand-mark" style="font-size: 1.35rem; padding: 0; color: #173c38;">ESPRIT<span>•</span>DIRECTION DES ÉTUDES & DES STAGES</div>
+              <small style="color: #668078;">Direction Académique · Pôle des Relations Entreprises & Stages PFE</small>
             </div>
             <div style="text-align: right;">
-              <span class="badge accepted" style="font-size: 0.75rem; padding: 6px 12px;">OFFICIAL CONVENTION · VALIDATED</span>
-              <div style="font-size: 0.72rem; color: #8b9993; margin-top: 4px;">REF: ESPRIT-INT-2026-0894</div>
+              <span class="badge accepted" style="font-size: 0.75rem; padding: 6px 12px;">CONVENTION OFFICIELLE · VALIDÉE</span>
+              <div style="font-size: 0.72rem; color: #8b9993; margin-top: 4px;">RÉF : ESPRIT-CONV-2026-0412</div>
             </div>
           </div>
           <div class="form-grid" style="margin-bottom: 20px;">
             <div style="background: #fbfcf9; border: 1px solid #e1e7df; border-radius: 6px; padding: 18px;">
-              <span class="eyebrow" style="color: #438060;">Student Engineer</span>
-              <h3 style="margin: 8px 0 4px; font-family: 'DM Serif Display', serif;">Alex Morgan</h3>
-              <p style="margin: 0; font-size: 0.78rem; color: #567068;">alex.morgan@esprit.tn · +216 22 334 455<br>Cycle Ingénieur Informatique · 5ème Année (PFE)</p>
+              <span class="eyebrow" style="color: #438060;">Élève Ingénieur (Bénéficiaire)</span>
+              <h3 style="margin: 8px 0 4px; font-family: 'DM Serif Display', serif;">Mohamed BenAli (Étudiant #1)</h3>
+              <p style="margin: 0; font-size: 0.78rem; color: #567068;">mohamed.benali@esprit.tn · +216 12 345 678<br>Cycle Ingénieur Informatique · 5ème Année (PFE)</p>
             </div>
             <div style="background: #fbfcf9; border: 1px solid #e1e7df; border-radius: 6px; padding: 18px;">
-              <span class="eyebrow" style="color: #b05a40;">Host Enterprise</span>
-              <h3 style="margin: 8px 0 4px; font-family: 'DM Serif Display', serif;">Google LLC</h3>
-              <p style="margin: 0; font-size: 0.78rem; color: #567068;">contact@google.com · +216 22 334 455<br>1600 Amphitheatre Parkway, Mountain View, CA</p>
+              <span class="eyebrow" style="color: #b05a40;">Entreprise d'Accueil</span>
+              <h3 style="margin: 8px 0 4px; font-family: 'DM Serif Display', serif;">Google Tunisia</h3>
+              <p style="margin: 0; font-size: 0.78rem; color: #567068;">contact@google.com · +216 22 334 455<br>Technopole El Ghazela, Ariana, Tunisie</p>
             </div>
           </div>
           <div style="background: #f8faf7; border: 1px solid #dae2da; border-radius: 6px; padding: 18px; margin-bottom: 20px; font-size: 0.8rem; color: #35534a; line-height: 1.6;">
-            <b>Bilateral Convention Terms:</b> The student intern is enrolled to execute their engineering graduation project (PFE) under dual academic and enterprise guidance. Academic progress, intermediate deliverables, periodic evaluations, and confidentiality commitments are governed by the ESPRIT University Regulations.
+            <b>Dispositions Particulières :</b> L'étudiant réalise son stage de fin d'études (PFE) intitulé <i>« Architecture Cloud & Microservices »</i> du <b>01/02/2026</b> au <b>31/07/2026</b>. Il est placé sous la double tutelle de son encadrant pédagogique universitaire et de son encadrant d'entreprise.
           </div>
           <div style="display: flex; justify-content: flex-end; gap: 12px;">
-            <button class="ghost-button" onclick="window.print()">⎙ Print Official Convention</button>
-            <button class="primary-button" (click)="announceUnavailable('Digital signature token')">Sign Electronically <span>↗</span></button>
+            <button class="ghost-button" onclick="window.print()">⎙ Imprimer la Convention</button>
+            <button class="primary-button" (click)="announceUnavailable('Signature électronique sécurisée')">Signer électroniquement <span>↗</span></button>
           </div>
         </section>
       } @else if (isDataPage()) {
         <section class="panel table-panel">
-          <div class="table-toolbar"><div class="search"><span>⌕</span><input [(ngModel)]="search" placeholder="Search records..."></div><span class="record-count">{{ filtered().length }} records</span></div>
+          <div class="table-toolbar">
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <div class="search"><span>⌕</span><input [(ngModel)]="search" placeholder="Rechercher..."></div>
+              <select [(ngModel)]="statusFilter" class="status-filter">
+                <option value="ALL">Tous les statuts</option>
+                <option value="PENDING">En attente (PENDING)</option>
+                <option value="ACCEPTED">Accepté (ACCEPTED)</option>
+                <option value="ACTIVE">En cours (ACTIVE)</option>
+                <option value="COMPLETED">Terminé (COMPLETED)</option>
+              </select>
+            </div>
+            <span class="record-count">{{ filtered().length }} enregistrements</span>
+          </div>
+
           @if (loading) { <app-loading-indicator /> }
           @else if (filtered().length) {
-            <div class="table-wrap"><table><thead><tr><th>Record</th><th>Details</th><th>Status</th><th class="align-right">Actions</th></tr></thead><tbody>
+            <div class="table-wrap"><table><thead><tr>
+              <th (click)="sort('name')" style="cursor: pointer;">Enregistrement ↕</th>
+              <th>Détails</th>
+              <th (click)="sort('status')" style="cursor: pointer;">Statut ↕</th>
+              <th class="align-right">Actions</th>
+            </tr></thead><tbody>
               @for (item of filtered(); track item.id) {
-                <tr><td><div class="record"><span class="record-avatar">{{ (item.name || item.title || item.taskDescription || 'R')[0] }}</span><div><b>{{ item.name || item.title || item.taskDescription || 'Record #' + item.id }}</b><small>#{{ item.id || 'new' }} · {{ item.email || item.company || 'Programme record' }}</small></div></div></td><td>{{ item.overallGrade != null ? ('Overall Grade: ' + item.overallGrade + '/20 · ' + getEvaluationMention(item.overallGrade)) : (item.address || item.description || item.company || item.reason || item.remarks || '—') }}</td><td><app-status-badge [label]="item.status || 'ACTIVE'" /></td><td class="align-right">
-                  @if (isRequestPage() && item.status === 'PENDING') { <button class="table-action approve" (click)="updateAcceptance(item, 'ACCEPTED')">Accept</button><button class="table-action reject" (click)="updateAcceptance(item, 'REJECTED')">Refuse</button> }
-                  @if (canManageTasks() && item.status === 'PENDING') { <button class="table-action approve" (click)="updateTask(item, 'APPROVED')">Approve</button><button class="table-action reject" (click)="updateTask(item, 'REJECTED')">Refuse</button> }
-                  @if (isInternshipPage() && (role === 'ADMIN' || role === 'STUDENT')) {
-                    @if (item.status === 'ACCEPTED') { <button class="table-action approve" (click)="updateInternshipStatus(item, 'ACTIVE')">▶ Start</button> }
-                    @if (item.status === 'ACTIVE') { <button class="table-action approve" (click)="updateInternshipStatus(item, 'COMPLETED')">✓ Complete</button> }
-                  }
-                  <button class="table-action main-action" (click)="view(item)">View</button>
-                  @if (isStudentPage() || isCompanyPage() || isSupervisorPage() || isInternshipPage() || isEvaluationPage() || isTaskPage()) { <button class="table-action" (click)="edit(item)">Edit</button><button class="table-action reject" (click)="remove(item)">Delete</button> }
-                </td></tr>
+                <tr>
+                  <td>
+                    <div class="record">
+                      <span class="record-avatar">{{ (item.name || item.title || item.taskDescription || item.firstName || 'R')[0] }}</span>
+                      <div>
+                        <b>{{ item.name || item.title || item.taskDescription || (item.firstName ? (item.firstName + ' ' + item.lastName) : ('Record #' + item.id)) }}</b>
+                        <small>#{{ item.id || 'nouveau' }} · {{ item.email || item.company || 'ESPRIT' }}</small>
+                      </div>
+                    </div>
+                  </td>
+                  <td>{{ item.overallGrade != null ? ('Note Finale : ' + item.overallGrade + '/20 · ' + getEvaluationMention(item.overallGrade)) : (item.address || item.description || item.company || item.reason || item.remarks || item.comment || '—') }}</td>
+                  <td><app-status-badge [label]="item.status || 'ACTIVE'" /></td>
+                  <td class="align-right">
+                    @if ((isRequestPage() || (isInternshipPage() && role === 'ADMIN')) && item.status === 'PENDING') {
+                      <button class="table-action approve" (click)="updateAcceptance(item, 'ACCEPTED')">Accepter</button>
+                      <button class="table-action reject" (click)="updateAcceptance(item, 'REJECTED')">Refuser</button>
+                    }
+                    @if (canManageTasks() && item.status === 'PENDING') {
+                      <button class="table-action approve" (click)="updateTask(item, 'APPROVED')">Approuver</button>
+                      <button class="table-action reject" (click)="updateTask(item, 'REJECTED')">Refuser</button>
+                    }
+                    @if (isInternshipPage() && (role === 'ADMIN' || role === 'STUDENT')) {
+                      @if (item.status === 'ACCEPTED') { <button class="table-action approve" (click)="updateInternshipStatus(item, 'ACTIVE')">▶ Démarrer</button> }
+                      @if (item.status === 'ACTIVE') { <button class="table-action approve" (click)="updateInternshipStatus(item, 'COMPLETED')">✓ Clôturer</button> }
+                    }
+                    <button class="table-action main-action" (click)="view(item)">Consulter</button>
+                    @if (isStudentPage() || isCompanyPage() || isSupervisorPage() || isInternshipPage() || isEvaluationPage() || isTaskPage()) {
+                      <button class="table-action" (click)="edit(item)">Modifier</button>
+                      <button class="table-action reject" (click)="remove(item)">Supprimer</button>
+                    }
+                  </td>
+                </tr>
               }
             </tbody></table></div>
-          } @else { <app-empty-state title="No records found" message="Try a different search or create the first record." /> }
+          } @else { <app-empty-state title="Aucun enregistrement trouvé" message="Créez votre premier enregistrement ou modifiez vos critères de recherche." /> }
         </section>
       } @else if (isUiWorkflowPage()) {
-        <section class="panel ui-workflow-panel"><div class="panel-head"><div><span class="eyebrow">Academic Workflow</span><h2>{{ uiWorkflowLabel() }}</h2></div><span class="badge accepted">Recorded in session</span></div><div class="ui-workflow-body"><p class="workflow-note">Submissions and incident reports are catalogued in this workspace and reviewed during jury evaluation.</p><textarea [(ngModel)]="uiText" rows="4" placeholder="Enter activity log, milestone submission, or incident report..." ></textarea><button class="primary-button" (click)="submitUiEntry()">Submit {{ uiWorkflowLabel().toLowerCase() }} <span>↗</span></button><div class="ui-entry-list">@for (entry of uiEntries; track entry.createdAt + entry.text) {<div class="ui-entry"><div><b>{{ entry.text }}</b><small>{{ entry.createdAt }}</small></div>@if (role === 'ADMIN') {<button class="table-action" (click)="updateUiEntryStatus(entry)">{{ entry.status === 'Processed' ? 'Processed' : 'Mark processed' }}</button>} @else {<span class="badge accepted">{{ entry.status }}</span>}</div>} @empty {<app-empty-state title="No submissions yet" message="Submit an entry to record your activity." />}</div></div></section>
+        <section class="panel ui-workflow-panel"><div class="panel-head"><div><span class="eyebrow">Journal & Réclamations</span><h2>{{ uiWorkflowLabel() }}</h2></div><span class="badge accepted">Enregistré dans la session</span></div><div class="ui-workflow-body"><p class="workflow-note">Les entrées et réclamations sont archivées et consultables par la direction des stages.</p><textarea [(ngModel)]="uiText" rows="4" placeholder="Saisissez votre note de journal, avancement de travail ou réclamation..."></textarea><button class="primary-button" (click)="submitUiEntry()">Soumettre {{ uiWorkflowLabel().toLowerCase() }} <span>↗</span></button><div class="ui-entry-list">@for (entry of uiEntries; track entry.createdAt + entry.text) {<div class="ui-entry"><div><b>{{ entry.text }}</b><small>{{ entry.createdAt }}</small></div>@if (role === 'ADMIN') {<button class="table-action" (click)="updateUiEntryStatus(entry)">{{ entry.status === 'Traité' ? 'Traité' : 'Marquer comme traité' }}</button>} @else {<span class="badge accepted">{{ entry.status }}</span>}</div>} @empty {<app-empty-state title="Aucune soumission pour le moment" message="Rédigez une entrée pour alimenter le journal de stage." />}</div></div></section>
       } @else {
-        <section class="panel empty-page"><app-empty-state icon="✦" [title]="title + ' is ready'" [message]="'The academic portal is ready for this section.'" /></section>
+        <section class="panel empty-page"><app-empty-state icon="✦" [title]="title + ' est prêt'" [message]="'Le portail académique est configuré pour cet espace.'" /></section>
       }
     </section>
   </main>
 </div>
 
+<!-- Modal Create / Edit -->
 @if (showForm) {
-  <div class="modal-backdrop" (click)="showForm = false"><section class="modal" (click)="$event.stopPropagation()"><button class="modal-close" (click)="showForm = false">×</button><span class="eyebrow">{{ editing ? 'Edit record' : 'New record' }}</span><h2>{{ editing ? 'Edit' : 'Create' }} {{ formTitle }}</h2>
+  <div class="modal-backdrop" (click)="showForm = false"><section class="modal" (click)="$event.stopPropagation()"><button class="modal-close" (click)="showForm = false">×</button><span class="eyebrow">{{ editing ? 'Modification' : 'Nouveau' }}</span><h2>{{ editing ? 'Modifier' : 'Créer' }} {{ formTitle }}</h2>
     <form [formGroup]="form" (ngSubmit)="save()">
-      @if (isStudentPage()) { <div class="form-grid"><label>First name<input formControlName="firstName"></label><label>Last name<input formControlName="lastName"></label></div><label>Email<input type="email" formControlName="email"></label><label>Phone <small>8 digits</small><input formControlName="phone"></label> }
-      @else if (isCompanyPage()) { <label>Company name<input formControlName="name"></label><label>Email<input type="email" formControlName="email"></label><div class="form-grid"><label>Phone<input formControlName="phone"></label><label>Address<input formControlName="address"></label></div> }
-      @else if (isSupervisorPage()) { <div class="form-grid"><label>First name<input formControlName="firstName"></label><label>Last name<input formControlName="lastName"></label></div><label>Email<input type="email" formControlName="email"></label><div class="form-grid"><label>Phone<input formControlName="phone"></label><label>Company ID<input type="number" formControlName="companyId"></label></div> }
-      @else if (isEvaluationPage()) { <div class="form-grid"><label>Internship ID<input type="number" formControlName="internshipId"></label><label>Supervisor ID<input type="number" formControlName="supervisorId"></label></div><div class="form-grid"><label>Quality / 20<input type="number" min="0" max="20" formControlName="quality"></label><label>Punctuality / 20<input type="number" min="0" max="20" formControlName="punctuality"></label></div><label>Communication / 20<input type="number" min="0" max="20" formControlName="communication"></label><label>Remarks<textarea formControlName="remarks" rows="3"></textarea></label> }
-      @else if (isTaskPage()) { <div class="form-grid"><label>Internship ID<input type="number" formControlName="internshipId"></label><label>Supervisor ID<input type="number" formControlName="supervisorId"></label></div><label>Task description<textarea formControlName="taskDescription" rows="3"></textarea></label><label>Comment<textarea formControlName="comment" rows="3"></textarea></label><small class="form-note">New tasks are submitted as Pending. The company changes status using Approve or Refuse.</small> }
-      @else { <label>Internship title<input formControlName="title"></label><label>Company<input formControlName="company"></label><label>Description<textarea formControlName="description" rows="3"></textarea></label><div class="form-grid"><label>Start date<input type="date" formControlName="startDate"></label><label>End date<input type="date" formControlName="endDate"></label></div><div class="form-grid"><label>Student ID<input type="number" min="1" formControlName="studentId"></label><label>Status<select formControlName="status"><option value="PENDING">Pending</option><option value="ACCEPTED">Accepted</option><option value="REJECTED">Rejected</option><option value="ACTIVE">Active</option><option value="COMPLETED">Completed</option><option value="CANCELLED">Cancelled</option></select></label></div>@if (form.hasError('dateOrder')) { <div class="alert error">The start date must be before the end date.</div> } }
-      @if (form.invalid && form.touched) { <div class="alert error">Please complete the required fields and correct invalid values before saving.</div> }
-      <button class="primary-button full" type="submit">{{ editing ? 'Update' : 'Save' }} record <span>↗</span></button>
+      @if (isStudentPage()) { <div class="form-grid"><label>Prénom<input formControlName="firstName"></label><label>Nom<input formControlName="lastName"></label></div><label>Email<input type="email" formControlName="email"></label><label>Téléphone <small>8 chiffres</small><input formControlName="phone"></label> }
+      @else if (isCompanyPage()) { <label>Raison sociale<input formControlName="name"></label><label>Email contact<input type="email" formControlName="email"></label><div class="form-grid"><label>Téléphone<input formControlName="phone"></label><label>Adresse du siège<input formControlName="address"></label></div> }
+      @else if (isSupervisorPage()) { <div class="form-grid"><label>Prénom<input formControlName="firstName"></label><label>Nom<input formControlName="lastName"></label></div><label>Email professionnel<input type="email" formControlName="email"></label><div class="form-grid"><label>Téléphone<input formControlName="phone"></label><label>ID Entreprise<input type="number" formControlName="companyId"></label></div> }
+      @else if (isEvaluationPage()) { <div class="form-grid"><label>ID Stage<input type="number" formControlName="internshipId"></label><label>ID Encadrant<input type="number" formControlName="supervisorId"></label></div><div class="form-grid"><label>Qualité technique / 20<input type="number" min="0" max="20" formControlName="quality"></label><label>Ponctualité / 20<input type="number" min="0" max="20" formControlName="punctuality"></label></div><label>Communication & Autonomie / 20<input type="number" min="0" max="20" formControlName="communication"></label><label>Appréciation générale<textarea formControlName="remarks" rows="3"></textarea></label> }
+      @else if (isTaskPage()) { <div class="form-grid"><label>ID Stage<input type="number" formControlName="internshipId"></label><label>ID Encadrant<input type="number" formControlName="supervisorId"></label></div><label>Intitulé du livrable / tâche<textarea formControlName="taskDescription" rows="3"></textarea></label><label>Commentaire du stagiaire<textarea formControlName="comment" rows="3"></textarea></label><small class="form-note">La tâche est soumise avec le statut "En attente". L'entreprise la valide via le bouton "Approuver".</small> }
+      @else { <label>Intitulé du stage (PFE)<input formControlName="title"></label><label>Entreprise partenaire<input formControlName="company"></label><label>Cahier des charges / Objectifs<textarea formControlName="description" rows="3"></textarea></label><div class="form-grid"><label>Date de début<input type="date" formControlName="startDate"></label><label>Date de fin<input type="date" formControlName="endDate"></label></div><div class="form-grid"><label>ID Étudiant<input type="number" min="1" formControlName="studentId"></label><label>Statut<select formControlName="status"><option value="PENDING">En attente (PENDING)</option><option value="ACCEPTED">Accepté (ACCEPTED)</option><option value="REJECTED">Refusé (REJECTED)</option><option value="ACTIVE">En cours (ACTIVE)</option><option value="COMPLETED">Terminé (COMPLETED)</option><option value="CANCELLED">Annulé (CANCELLED)</option></select></label></div>@if (form.hasError('dateOrder')) { <div class="alert error">La date de début doit précéder la date de fin.</div> } }
+      @if (form.invalid && form.touched) { <div class="alert error">Veuillez renseigner tous les champs obligatoires avant d'enregistrer.</div> }
+      <button class="primary-button full" type="submit">{{ editing ? 'Mettre à jour' : 'Enregistrer' }} <span>↗</span></button>
     </form>
   </section></div>
 }
 
+<!-- Modal View Details -->
 @if (detailOpen && selectedRecord) {
-  <div class="modal-backdrop" (click)="detailOpen = false"><section class="modal detail-modal" (click)="$event.stopPropagation()"><button class="modal-close" (click)="detailOpen = false">×</button><span class="eyebrow">Record detail</span><h2>{{ selectedRecord.name || selectedRecord.title || selectedRecord.taskDescription || 'Record #' + selectedRecord.id }}</h2><div class="detail-list">@for (entry of selectedRecord | keyvalue; track entry.key) {<div><small>{{ entry.key }}</small><b>{{ entry.value || '—' }}</b></div>}</div></section></div>
+  <div class="modal-backdrop" (click)="detailOpen = false"><section class="modal detail-modal" (click)="$event.stopPropagation()"><button class="modal-close" (click)="detailOpen = false">×</button><span class="eyebrow">Détail de l'enregistrement</span><h2>{{ selectedRecord.name || selectedRecord.title || selectedRecord.taskDescription || (selectedRecord.firstName ? (selectedRecord.firstName + ' ' + selectedRecord.lastName) : ('Enregistrement #' + selectedRecord.id)) }}</h2><div class="detail-list">@for (entry of selectedRecord | keyvalue; track entry.key) {<div><small>{{ entry.key }}</small><b>{{ entry.value || '—' }}</b></div>}</div></section></div>
 }

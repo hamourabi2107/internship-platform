@@ -3,7 +3,7 @@ import { ActivatedRoute, Router, RouterLink, RouterLinkActive } from '@angular/r
 import { CommonModule } from '@angular/common';
 import { AbstractControl, ReactiveFormsModule, FormsModule, FormBuilder, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
 import { Observable, catchError, forkJoin, of, timeout } from 'rxjs';
-import { AuthService } from './core/services/auth.service';
+import { AuthService, ActorRole } from './core/services/auth.service';
 import { ApiService } from './core/services/api.services';
 import { Acceptance, Company, Evaluation, Internship, Student, Supervisor, TaskApproval } from './core/models/entities';
 import { StatusBadgeComponent } from './shared/components/status-badge.component';
@@ -32,6 +32,15 @@ export interface GradeReportItem {
   decision: string;
 }
 
+export interface AppNotification {
+  id: number;
+  title: string;
+  message: string;
+  time: string;
+  type: 'internship' | 'task' | 'eval' | 'convention' | 'complaint';
+  unread: boolean;
+}
+
 @Component({
   selector: 'app-workspace',
   standalone: true,
@@ -53,8 +62,12 @@ export class WorkspaceComponent {
   error = '';
   notice = '';
   search = '';
+  statusFilter = 'ALL';
+  sortColumn = '';
+  sortAsc = true;
   showForm = false;
   editing: any = null;
+  notificationsOpen = false;
 
   dashboardLoading = false;
   dashboardError = '';
@@ -146,30 +159,30 @@ export class WorkspaceComponent {
 
   get title() {
     const labels: Record<string, string> = {
-      dashboard: 'Overview',
-      students: 'Students',
-      companies: 'Companies',
-      supervisors: 'Supervisors',
-      internships: 'Internships',
-      requests: 'Internship requests',
-      documents: 'Documents',
-      evaluations: 'Evaluations',
-      complaints: 'Complaints',
-      reports: 'Academic Grade Sheet & Reports',
-      grades: 'Academic Grade Sheet & Reports',
-      tasks: 'Task approvals',
-      journal: 'Internship Journal',
-      report: 'Internship report',
-      'assignment-letter': 'Official Placement Agreement',
-      evaluation: 'My evaluation',
-      complaint: 'Complaints',
-      company: 'Host Company Profile',
-      supervisor: 'Assigned Academic & Company Supervisor'
+      dashboard: 'Vue d\'ensemble',
+      students: 'Étudiants inscrits',
+      companies: 'Entreprises partenaires',
+      supervisors: 'Encadrants entreprise',
+      internships: 'Catalogue des stages (PFE)',
+      requests: 'Demandes & candidatures',
+      documents: 'Conventions de stage officielles',
+      evaluations: 'Grilles d\'évaluation',
+      complaints: 'Réclamations & litiges',
+      reports: 'Bilan académique & fiches de notes',
+      grades: 'Bilan académique & fiches de notes',
+      tasks: 'Validation des livrables & tâches',
+      journal: 'Journal de bord hebdomadaire',
+      report: 'Rapport de stage',
+      'assignment-letter': 'Convention officielle de stage',
+      evaluation: 'Mon évaluation de stage',
+      complaint: 'Réclamations & incidents',
+      company: 'Entreprise d\'accueil',
+      supervisor: 'Encadrant assigné'
     };
-    return labels[this.currentPath.split('/').pop() || 'dashboard'] || 'Overview';
+    return labels[this.currentPath.split('/').pop() || 'dashboard'] || 'Vue d\'ensemble';
   }
 
-  get actor() {
+  get actor(): ActorRole {
     return this.auth.actor() || (this.role === 'COMPANY' ? 'COMPANY' : this.role === 'ADMIN' ? 'STAGE_DEPT' : 'STUDENT');
   }
 
@@ -185,7 +198,7 @@ export class WorkspaceComponent {
         { label: 'Évaluations encadrants', path: '/admin/evaluations', icon: '✦' },
         { label: 'Suivi des stages (PFE)', path: '/admin/internships', icon: '◫' },
         { label: 'Étudiants inscrits', path: '/admin/students', icon: '◎' },
-        { label: 'Entreprises partenaires', path: '/admin/companies', icon: '▣' }
+        { label: 'Entreprises d\'accueil', path: '/admin/companies', icon: '▣' }
       ];
     }
     if (this.actor === 'STAGE_DEPT' || this.role === 'ADMIN') {
@@ -275,6 +288,40 @@ export class WorkspaceComponent {
     return this.role === 'COMPANY' && this.currentPath.includes('tasks');
   }
 
+  get notifications(): AppNotification[] {
+    const list: AppNotification[] = [];
+    if (this.role === 'STUDENT') {
+      list.push({ id: 1, title: 'Convention Validée', message: 'Votre convention de stage PFE a été enregistrée par le Service des Stages.', time: 'À l\'instant', type: 'convention', unread: true });
+      list.push({ id: 2, title: 'Évaluation Enregistrée', message: 'L\'encadrant a transmis votre grille d\'évaluation (Note calculée : 18/20).', time: 'Aujourd\'hui', type: 'eval', unread: true });
+      list.push({ id: 3, title: 'Tâche Approuvée', message: 'La tâche "Sprint 1" a été approuvée par l\'entreprise.', time: 'Récemment', type: 'task', unread: false });
+    } else if (this.role === 'COMPANY') {
+      list.push({ id: 1, title: 'Nouvelle Candidature', message: 'Nouvelle demande de stage PFE reçue de Mohamed BenAli.', time: 'À l\'instant', type: 'internship', unread: true });
+      list.push({ id: 2, title: 'Tâche à Approuver', message: 'Le stagiaire a soumis le livrable "Sprint 1 : Architecture microservices".', time: 'Aujourd\'hui', type: 'task', unread: true });
+    } else if (this.actor === 'PEDAGOGICAL_DEPT') {
+      list.push({ id: 1, title: 'Grille d\'évaluation soumise', message: 'Google Tunisia a transmis la note de Mohamed BenAli (18/20 - Mention Très Bien).', time: 'À l\'instant', type: 'eval', unread: true });
+      list.push({ id: 2, title: 'Bilan de soutenance', message: 'Fiche académique prête pour validation finale du jury.', time: 'Aujourd\'hui', type: 'eval', unread: false });
+    } else {
+      list.push({ id: 1, title: 'Nouvelle Convention', message: 'Convention de stage PFE reçue pour validation administrative.', time: 'À l\'instant', type: 'convention', unread: true });
+      list.push({ id: 2, title: 'Réclamation Étudiante', message: '1 réclamation déposée dans le portail académique.', time: 'Aujourd\'hui', type: 'complaint', unread: true });
+    }
+    return list;
+  }
+
+  get unreadNotificationCount(): number {
+    return this.notifications.filter(n => n.unread).length;
+  }
+
+  toggleNotifications() {
+    this.notificationsOpen = !this.notificationsOpen;
+  }
+
+  markAllNotificationsRead() {
+    this.notifications.forEach(n => n.unread = false);
+    this.notificationsOpen = false;
+    this.notice = 'Toutes les notifications ont été marquées comme lues.';
+    setTimeout(() => this.notice = '', 3000);
+  }
+
   load() {
     this.loading = true;
     this.error = '';
@@ -325,14 +372,14 @@ export class WorkspaceComponent {
         const current = internships.find(item => ['ACTIVE', 'IN_PROGRESS', 'ONGOING'].includes(item.status.toUpperCase()));
         const latestEvaluation = evaluations.length ? evaluations[0] : null;
         const evalNote = latestEvaluation?.overallGrade != null
-          ? `Grade: ${latestEvaluation.overallGrade}/20 (${this.getEvaluationMention(latestEvaluation.overallGrade)})`
-          : 'Pending final evaluation';
+          ? `Note : ${latestEvaluation.overallGrade}/20 (${this.getEvaluationMention(latestEvaluation.overallGrade)})`
+          : 'En cours d\'évaluation';
 
         this.dashboardStats = {
-          first: { label: 'Placement status', value: current?.status || (internships[0]?.status || 'PENDING'), note: current?.title || internships[0]?.title || 'Internship record' },
-          second: { label: 'Host enterprise', value: current?.company || internships[0]?.company || 'Pending', note: 'Assigned company placement' },
-          third: { label: 'Open tasks', value: String(tasks.filter(item => item.status === 'PENDING').length), note: 'Tasks awaiting review' },
-          fourth: { label: 'Evaluation', value: latestEvaluation?.overallGrade != null ? `${latestEvaluation.overallGrade}/20` : 'In progress', note: evalNote }
+          first: { label: 'Statut du stage', value: current?.status || (internships[0]?.status || 'PENDING'), note: current?.title || internships[0]?.title || 'Stage PFE' },
+          second: { label: 'Entreprise d\'accueil', value: current?.company || internships[0]?.company || 'Google Tunisia', note: 'Partenaire assigné' },
+          third: { label: 'Tâches & livrables', value: String(tasks.length), note: `${tasks.filter(t => t.status === 'APPROVED').length} validées, ${tasks.filter(t => t.status === 'PENDING').length} en attente` },
+          fourth: { label: 'Note académique', value: latestEvaluation?.overallGrade != null ? `${latestEvaluation.overallGrade}/20` : 'En cours', note: evalNote }
         };
         this.items = internships;
         this.dashboardLoading = false;
@@ -349,10 +396,10 @@ export class WorkspaceComponent {
         internships: this.safeList(this.api.internships.list())
       }).subscribe(({ acceptances, tasks, evaluations, internships }) => {
         this.dashboardStats = {
-          first: { label: 'Pending requests', value: String(acceptances.filter(item => item.status === 'PENDING').length), note: 'Pending candidate acceptances' },
-          second: { label: 'Active internships', value: String(internships.filter(item => item.status === 'ACTIVE').length || acceptances.filter(item => item.status === 'ACCEPTED').length), note: 'Ongoing company placements' },
-          third: { label: 'Task approvals', value: String(tasks.filter(item => item.status === 'PENDING').length), note: 'Tasks requiring supervisor approval' },
-          fourth: { label: 'Completed evaluations', value: String(evaluations.length), note: 'Final grades calculated' }
+          first: { label: 'Candidatures reçues', value: String(internships.filter(item => item.status === 'PENDING').length || acceptances.filter(item => item.status === 'PENDING').length), note: 'Demandes à valider' },
+          second: { label: 'Stages validés', value: String(internships.filter(item => item.status === 'ACCEPTED' || item.status === 'ACTIVE').length), note: 'Placements actifs' },
+          third: { label: 'Approbation livrables', value: String(tasks.filter(item => item.status === 'PENDING').length), note: 'Tâches soumises par les stagiaires' },
+          fourth: { label: 'Grilles d\'évaluation', value: String(evaluations.length), note: 'Notes finales transmises' }
         };
         this.items = internships;
         this.dashboardLoading = false;
@@ -369,10 +416,10 @@ export class WorkspaceComponent {
       evaluations: this.safeList(this.api.evaluations.list())
     }).subscribe(({ students, companies, internships, acceptances, evaluations }) => {
       this.dashboardStats = {
-        first: { label: 'Total students', value: String(students.length), note: 'Registered student engineers' },
-        second: { label: 'Partner companies', value: String(companies.length), note: 'Accredited host enterprises' },
-        third: { label: 'Total placements', value: String(internships.length), note: `${internships.filter(i => i.status === 'ACTIVE').length} active, ${internships.filter(i => i.status === 'COMPLETED').length} completed` },
-        fourth: { label: 'Evaluations graded', value: String(evaluations.length), note: 'Official academic grade records' }
+        first: { label: 'Étudiants inscrits', value: String(students.length), note: 'Élèves ingénieurs ESPRIT' },
+        second: { label: 'Entreprises partenaires', value: String(companies.length), note: 'Partenaires accrédités' },
+        third: { label: 'Total des stages', value: String(internships.length), note: `${internships.filter(i => i.status === 'ACTIVE').length} actifs, ${internships.filter(i => i.status === 'COMPLETED').length} soutenus` },
+        fourth: { label: 'Évaluations validées', value: String(evaluations.length), note: 'Fiches de notes enregistrées' }
       };
       this.items = internships;
       this.dashboardLoading = false;
@@ -398,15 +445,15 @@ export class WorkspaceComponent {
           studentId: student.id || 1,
           studentName: `${student.firstName} ${student.lastName}`,
           studentEmail: student.email,
-          companyName: company?.name || internship?.company || 'ESPRIT Partner Enterprise',
-          internshipTitle: internship?.title || 'Graduation Internship (PFE)',
-          internshipStatus: internship?.status || 'ACTIVE',
+          companyName: company?.name || internship?.company || 'Google Tunisia',
+          internshipTitle: internship?.title || 'PFE - Architecture Cloud & Microservices',
+          internshipStatus: internship?.status || 'PENDING',
           quality: evaluation?.quality,
           punctuality: evaluation?.punctuality,
           communication: evaluation?.communication,
           overallGrade: grade,
           mention: this.getEvaluationMention(grade),
-          decision: grade != null ? (grade >= 10 ? 'ADMIS (Validated)' : 'AJOURNÉ (Fail)') : 'EN COURS (In Progress)'
+          decision: grade != null ? (grade >= 10 ? 'ADMIS (Validé)' : 'AJOURNÉ (Échec)') : 'EN COURS (En attente)'
         };
       });
 
@@ -416,7 +463,7 @@ export class WorkspaceComponent {
   }
 
   getEvaluationMention(grade: number | undefined): string {
-    if (grade == null) return 'Pending evaluation';
+    if (grade == null) return 'En attente d\'évaluation';
     if (grade >= 16) return 'Très Bien (Honors)';
     if (grade >= 14) return 'Bien';
     if (grade >= 12) return 'Assez Bien';
@@ -426,7 +473,7 @@ export class WorkspaceComponent {
 
   exportGradesCsv() {
     if (!this.gradeReports.length) return;
-    const header = ['Student ID', 'Student Name', 'Email', 'Company', 'Internship Title', 'Status', 'Quality /20', 'Punctuality /20', 'Communication /20', 'Overall Grade /20', 'Mention', 'Decision'];
+    const header = ['ID Etudiant', 'Nom & Prenom', 'Email', 'Entreprise', 'Titre du Stage', 'Statut', 'Qualite /20', 'Ponctualite /20', 'Communication /20', 'Moyenne Generale /20', 'Mention', 'Decision Jury'];
     const rows = this.gradeReports.map(r => [
       r.studentId,
       `"${r.studentName}"`,
@@ -445,19 +492,20 @@ export class WorkspaceComponent {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `ESPRIT_Academic_Internship_Grades_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', `ESPRIT_Bilan_Notes_Stages_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    this.notice = 'Grade report exported successfully to CSV';
+    this.notice = 'Bilan académique exporté avec succès en format CSV.';
     setTimeout(() => this.notice = '', 3000);
   }
 
   updateInternshipStatus(item: Internship, status: string) {
+    item.status = status;
     const updated = { ...item, status };
     this.api.internships.save(updated).subscribe({
       next: () => {
-        this.notice = `Internship placement status transitioned to ${status.toUpperCase()}`;
+        this.notice = `Statut du stage mis à jour : ${status}`;
         this.load();
         setTimeout(() => this.notice = '', 3000);
       },
@@ -473,10 +521,10 @@ export class WorkspaceComponent {
   fail(e: any) {
     this.loading = false;
     this.error = e?.name === 'TimeoutError'
-      ? 'The gateway took too long to respond. Please verify that microservices are operational.'
+      ? 'La passerelle API Gateway prend trop de temps à répondre.'
       : e?.status === 0
-        ? 'Gateway unavailable. Start the backend services to load live data.'
-        : `Could not load ${this.title.toLowerCase()}. Please try again.`;
+        ? 'Passerelle indisponible. Démarrez les microservices Docker.'
+        : `Impossible de charger ${this.title.toLowerCase()}. Veuillez réessayer.`;
   }
 
   logout() {
@@ -485,7 +533,7 @@ export class WorkspaceComponent {
   }
 
   announceUnavailable(feature: string) {
-    this.notice = `${feature} is registered in the academic system.`;
+    this.notice = `${feature} est enregistré dans le système académique.`;
     setTimeout(() => this.notice = '', 3500);
   }
 
@@ -494,7 +542,7 @@ export class WorkspaceComponent {
   }
 
   uiWorkflowLabel() {
-    return this.currentPath.endsWith('journal') ? 'Journal entry' : 'Complaint';
+    return this.currentPath.endsWith('journal') ? 'Journal de bord' : 'Réclamation';
   }
 
   loadUiEntries() {
@@ -511,27 +559,27 @@ export class WorkspaceComponent {
     const text = this.uiText.trim();
     if (!text) return;
     const key = `internship-demo-${this.currentPath.endsWith('complaints') ? 'complaint' : this.currentPath.split('/').pop()}`;
-    const entries = [...this.uiEntries, { text, status: 'Submitted', createdAt: new Date().toLocaleDateString() }];
+    const entries = [...this.uiEntries, { text, status: 'Soumis', createdAt: new Date().toLocaleDateString('fr-FR') }];
     localStorage.setItem(key, JSON.stringify(entries));
     this.uiEntries = entries;
     this.uiText = '';
-    this.notice = `${this.uiWorkflowLabel()} recorded successfully`;
+    this.notice = `${this.uiWorkflowLabel()} enregistré avec succès`;
     setTimeout(() => this.notice = '', 3000);
   }
 
   updateUiEntryStatus(entry: { text: string; status: string; createdAt: string }) {
-    entry.status = 'Processed';
+    entry.status = 'Traité';
     const key = `internship-demo-${this.currentPath.endsWith('complaints') ? 'complaint' : this.currentPath.split('/').pop()}`;
     localStorage.setItem(key, JSON.stringify(this.uiEntries));
   }
 
   get formTitle() {
-    if (this.isStudentPage()) return 'student';
-    if (this.isCompanyPage()) return 'company';
-    if (this.isSupervisorPage()) return 'supervisor';
-    if (this.isEvaluationPage()) return 'evaluation';
-    if (this.isTaskPage()) return 'task';
-    return 'internship request';
+    if (this.isStudentPage()) return 'étudiant';
+    if (this.isCompanyPage()) return 'entreprise';
+    if (this.isSupervisorPage()) return 'encadrant';
+    if (this.isEvaluationPage()) return 'évaluation';
+    if (this.isTaskPage()) return 'tâche';
+    return 'demande de stage';
   }
 
   openNew() {
@@ -544,7 +592,7 @@ export class WorkspaceComponent {
     } else if (this.isSupervisorPage()) {
       this.supervisorForm.reset({ id: null, companyId: 1 });
     } else if (this.isEvaluationPage()) {
-      this.evaluationForm.reset({ id: null, internshipId: 1, supervisorId: 1, quality: 10, punctuality: 10, communication: 10 });
+      this.evaluationForm.reset({ id: null, internshipId: 1, supervisorId: 1, quality: 18, punctuality: 17, communication: 19 });
     } else if (this.isTaskPage()) {
       this.taskForm.reset({ id: null, internshipId: 1, supervisorId: 1, status: 'PENDING' });
     } else {
@@ -554,16 +602,15 @@ export class WorkspaceComponent {
 
   edit(item: any) {
     this.editing = item;
+    this.form.reset(item);
     this.showForm = true;
-    this.form.patchValue(item);
   }
 
   view(item: any) {
-    if (!item.id) {
-      this.selectedRecord = item;
-      this.detailOpen = true;
-      return;
-    }
+    this.selectedRecord = item;
+    this.detailOpen = true;
+    if (!item.id) return;
+
     let request: Observable<any>;
     if (this.isStudentPage()) request = this.api.students.get(item.id);
     else if (this.isCompanyPage()) request = this.api.companies.get(item.id);
@@ -575,9 +622,8 @@ export class WorkspaceComponent {
     request.subscribe({
       next: record => {
         this.selectedRecord = record;
-        this.detailOpen = true;
       },
-      error: e => this.fail(e)
+      error: () => {}
     });
   }
 
@@ -621,7 +667,7 @@ export class WorkspaceComponent {
     action.subscribe({
       next: () => {
         this.showForm = false;
-        this.notice = this.editing ? 'Updated successfully' : 'Created successfully';
+        this.notice = this.editing ? 'Modifié avec succès' : 'Créé avec succès';
         this.load();
         setTimeout(() => this.notice = '', 3000);
       },
@@ -630,27 +676,31 @@ export class WorkspaceComponent {
   }
 
   updateAcceptance(item: Internship, status: 'ACCEPTED' | 'REJECTED') {
+    item.status = status;
     this.api.internships.save({ ...item, status }).subscribe({
       next: () => {
-        this.notice = `Request ${status.toLowerCase()}`;
+        this.notice = `Candidature ${status === 'ACCEPTED' ? 'acceptée' : 'refusée'}`;
         this.load();
+        setTimeout(() => this.notice = '', 3000);
       },
       error: e => this.fail(e)
     });
   }
 
   updateTask(item: TaskApproval, status: TaskApproval['status']) {
+    item.status = status;
     this.api.tasks.save({ ...item, status }).subscribe({
       next: () => {
-        this.notice = `Task ${status.toLowerCase()}`;
+        this.notice = `Tâche ${status === 'APPROVED' ? 'approuvée' : 'refusée'}`;
         this.load();
+        setTimeout(() => this.notice = '', 3000);
       },
       error: e => this.fail(e)
     });
   }
 
   remove(item: any) {
-    if (!item.id || !confirm('Delete this record?')) return;
+    if (!item.id || !confirm('Confirmer la suppression de cet enregistrement ?')) return;
     const action = this.isStudentPage()
       ? this.api.students.remove(item.id)
       : this.isCompanyPage()
@@ -665,16 +715,42 @@ export class WorkspaceComponent {
 
     action.subscribe({
       next: () => {
-        this.notice = 'Record deleted';
+        this.notice = 'Enregistrement supprimé';
         this.load();
+        setTimeout(() => this.notice = '', 3000);
       },
       error: e => this.fail(e)
     });
   }
 
+  sort(col: string) {
+    if (this.sortColumn === col) {
+      this.sortAsc = !this.sortAsc;
+    } else {
+      this.sortColumn = col;
+      this.sortAsc = true;
+    }
+  }
+
   filtered() {
     const q = this.search.toLowerCase();
-    return this.items.filter(x => !q || JSON.stringify(x).toLowerCase().includes(q));
+    let res = this.items.filter(x => {
+      const matchesQuery = !q || JSON.stringify(x).toLowerCase().includes(q);
+      const matchesStatus = this.statusFilter === 'ALL' || !x.status || x.status.toUpperCase() === this.statusFilter.toUpperCase();
+      return matchesQuery && matchesStatus;
+    });
+
+    if (this.sortColumn) {
+      res = [...res].sort((a, b) => {
+        const valA = a[this.sortColumn] ?? '';
+        const valB = b[this.sortColumn] ?? '';
+        return this.sortAsc
+          ? String(valA).localeCompare(String(valB))
+          : String(valB).localeCompare(String(valA));
+      });
+    }
+
+    return res;
   }
 
   filteredReports() {
