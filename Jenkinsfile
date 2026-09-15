@@ -82,10 +82,14 @@ pipeline {
                 script {
                     if (env.SONAR_HOST_URL) {
                         echo "Executing SonarQube Scanner against ${env.SONAR_HOST_URL}..."
+                        def sonarCmd = "mvn -B sonar:sonar -Dsonar.host.url=${env.SONAR_HOST_URL}"
+                        if (env.SONAR_AUTH_TOKEN) {
+                            sonarCmd += " -Dsonar.login=${env.SONAR_AUTH_TOKEN}"
+                        }
                         if (isUnix()) {
-                            sh 'mvn -B sonar:sonar -Dsonar.host.url="${SONAR_HOST_URL}" ${SONAR_AUTH_TOKEN ? "-Dsonar.login=" + env.SONAR_AUTH_TOKEN : ""}'
+                            sh sonarCmd
                         } else {
-                            bat 'call mvn -B sonar:sonar -Dsonar.host.url="%SONAR_HOST_URL%"'
+                            bat "call ${sonarCmd}"
                         }
                     } else {
                         echo "SonarQube host (SONAR_HOST_URL) is not configured in this CI environment. Analysis step skipped without failure."
