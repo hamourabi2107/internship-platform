@@ -4,7 +4,7 @@ pipeline {
     options {
         skipDefaultCheckout(true)
         timestamps()
-        timeout(time: 30, unit: 'MINUTES')
+        timeout(time: 60, unit: 'MINUTES')
     }
 
     environment {
@@ -118,16 +118,15 @@ pipeline {
                     if (isUnix()) {
                         sh '''
                             docker compose down --remove-orphans || true
-                            docker rm -f eureka-server api-gateway student-service internship-service company-service student-db internship-db company-db prometheus grafana 2>/dev/null || true
                             docker compose up -d
-                            sleep 15
+                            echo "Waiting 20 seconds for initial bootstrap..."
+                            sleep 20
                         '''
                     } else {
                         bat '''
                             docker compose down --remove-orphans
-                            docker rm -f eureka-server api-gateway student-service internship-service company-service student-db internship-db company-db prometheus grafana 2>nul || ver >nul
                             docker compose up -d
-                            timeout /t 15 /nobreak
+                            timeout /t 20 /nobreak
                         '''
                     }
                 }
@@ -140,7 +139,7 @@ pipeline {
                     echo "Executing automated health and gateway route verifications..."
                     if (isUnix()) {
                         sh 'chmod +x scripts/verify.sh'
-                        sh './scripts/verify.sh'
+                        sh 'bash ./scripts/verify.sh'
                     } else {
                         powershell 'powershell -ExecutionPolicy Bypass -File scripts/verify.ps1'
                     }
