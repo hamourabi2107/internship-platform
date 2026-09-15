@@ -17,7 +17,7 @@
     <header class="topbar">
       <div class="crumb"><span>{{ currentAccount.label }}</span><b>/</b><strong>{{ title }}</strong></div>
       <div class="top-actions">
-        <button class="icon-button" aria-label="Recherche" (click)="announceUnavailable('Recherche globale')">⌕</button>
+        <button class="icon-button" aria-label="Recherche" (click)="triggerSearch()" title="Rechercher dans les données">⌕</button>
         <button class="icon-button notif-btn" aria-label="Notifications" (click)="toggleNotifications()">
           ♧
           @if (unreadNotificationCount > 0) {

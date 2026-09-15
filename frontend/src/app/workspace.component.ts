@@ -537,6 +537,17 @@ export class WorkspaceComponent {
     setTimeout(() => this.notice = '', 3500);
   }
 
+  triggerSearch() {
+    const input = document.querySelector('.search input') as HTMLInputElement | null;
+    if (input) {
+      input.focus();
+      input.select();
+    } else {
+      this.notice = 'Recherche : Ouvrez une rubrique (ex: Mes stages, Entreprises) pour filtrer les enregistrements.';
+      setTimeout(() => this.notice = '', 3500);
+    }
+  }
+
   isUiWorkflowPage() {
     return ['journal', 'complaint', 'complaints'].some(page => this.currentPath.endsWith(page));
   }
