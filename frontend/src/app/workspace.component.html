@@ -27,8 +27,10 @@
         <div class="user-chip">
           <span class="avatar" style="font-size: 1.1rem; background: #eef4e8;">{{ currentAccount.icon }}</span>
           <span><b>{{ currentAccount.name }}</b><small>{{ currentAccount.subTitle }}</small></span>
-          <i>⌄</i>
         </div>
+        <button class="topbar-logout-btn" (click)="logout()" title="Se déconnecter de cette session">
+          ↪ <span>Déconnexion</span>
+        </button>
       </div>
     </header>
 

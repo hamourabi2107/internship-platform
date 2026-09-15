@@ -15,3 +15,6 @@
 .notif-item p { font-size: 0.72rem; color: #567068; margin: 3px 0 4px; line-height: 1.35; }
 .notif-item small { font-size: 0.65rem; color: #8fa098; }
 .status-filter { border: 1px solid #e1e7df; border-radius: 5px; padding: 7px 11px; background: #fbfcfa; font: inherit; font-size: 0.76rem; color: #274a42; outline: 0; }
+.topbar-logout-btn { background: #f4f7f2; border: 1px solid #d4dfd8; border-radius: 6px; color: #b05a40; font-weight: 700; font-size: 0.74rem; padding: 7px 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.15s ease; }
+.topbar-logout-btn:hover { background: #fbeae6; border-color: #e5b9ad; color: #923f29; }
+

@@ -19,8 +19,8 @@ export const DEMO_ACCOUNTS: Record<ActorRole, DemoAccount> = {
     id: 'STUDENT',
     baseRole: 'STUDENT',
     label: 'Espace Étudiant',
-    subTitle: 'Élève ingénieur · PFE & Stages',
-    name: 'Alex Morgan',
+    subTitle: 'Élève ingénieur (PFE) · ID #1',
+    name: 'Mohamed BenAli',
     email: 'etudiant@esprit.tn',
     homeUrl: '/student/dashboard',
     icon: '👨‍🎓'
@@ -29,8 +29,8 @@ export const DEMO_ACCOUNTS: Record<ActorRole, DemoAccount> = {
     id: 'COMPANY',
     baseRole: 'COMPANY',
     label: 'Espace Entreprise (RH / Encadrant)',
-    subTitle: 'Partenaire Entreprise · Google LLC',
-    name: 'Sarah Ben Salem',
+    subTitle: 'Partenaire Entreprise · Google Tunisia',
+    name: 'Ahmed Mansour (Google)',
     email: 'entreprise@esprit.tn',
     homeUrl: '/company/dashboard',
     icon: '🏢'
@@ -40,7 +40,7 @@ export const DEMO_ACCOUNTS: Record<ActorRole, DemoAccount> = {
     baseRole: 'ADMIN',
     label: 'Espace Chef de département des stages',
     subTitle: 'Direction des stages & conventions',
-    name: 'Dr. Karim Mansour',
+    name: 'Dr. Karim Mansour (Stages)',
     email: 'stages@esprit.tn',
     homeUrl: '/admin/dashboard',
     icon: '🏛️'
@@ -50,7 +50,7 @@ export const DEMO_ACCOUNTS: Record<ActorRole, DemoAccount> = {
     baseRole: 'ADMIN',
     label: 'Espace Chef de département pédagogique',
     subTitle: 'Direction des études, fiches de notes & jurys',
-    name: 'Prof. Leila Trabelsi',
+    name: 'Prof. Leila Trabelsi (Pédagogie)',
     email: 'pedagogique@esprit.tn',
     homeUrl: '/admin/reports',
     icon: '👨‍🏫'
